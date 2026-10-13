@@ -1,0 +1,15 @@
+{
+  "name": "Stoma Template",
+  "short_name": "Stoma Template",
+  "description": "Measure a stoma from a photo and print a true-size cutting template. Trial version for evaluation.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDF2F1",
+  "theme_color": "#0E6F6A",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

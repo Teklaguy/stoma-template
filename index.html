@@ -1,0 +1,1804 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E6F6A"><meta name="color-scheme" content="light dark"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Stoma Template"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png"><style>body{margin:0}</style></head><body><title>Stoma Template</title>
+
+<style>
+/* Layout: one column, four steps. A tab row on top, a working panel below (photo editor or template). */
+:root {
+  --bg: #EDF2F1;
+  --surface: #FFFFFF;
+  --ink: #10302E;
+  --muted: #53706D;
+  --line: #CCDAD8;
+  --accent: #0B6E6A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D7EDEB;
+  --ok: #17703F;
+  --warn: #8F5600;
+  --warn-soft: #FFF0D2;
+  --bad: #B3261E;
+  --bad-soft: #FDE7E5;
+  --cut: #10302E;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-num: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1414; --surface: #132120; --ink: #E3EFED; --muted: #8FABA8; --line: #27403D;
+    --accent: #4CC9BE; --accent-ink: #052321; --accent-soft: #173533;
+    --ok: #6FD39A; --warn: #F0B35A; --warn-soft: #382A10; --bad: #FF8F86; --bad-soft: #3D1C19; --cut: #E3EFED;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1414; --surface: #132120; --ink: #E3EFED; --muted: #8FABA8; --line: #27403D;
+  --accent: #4CC9BE; --accent-ink: #052321; --accent-soft: #173533;
+  --ok: #6FD39A; --warn: #F0B35A; --warn-soft: #382A10; --bad: #FF8F86; --bad-soft: #3D1C19; --cut: #E3EFED;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 16px 40px; -webkit-text-size-adjust: 100%; }
+.app { max-width: 640px; margin-inline: auto; display: flex; flex-direction: column; gap: 14px; }
+h1 { font-size: 1.35rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.1rem; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.big { font-size: 1.05rem; }
+header { display: flex; flex-direction: column; gap: 2px; }
+header p { color: var(--muted); font-size: .9rem; }
+
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-bottom: 1px solid var(--line); }
+.steps button { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 10px 2px 9px; min-height: 48px; font: inherit; font-size: .9rem; font-weight: 500; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.steps button .n { font-family: var(--font-num); font-size: .75rem; }
+.steps button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.steps button.done:not([aria-selected="true"]) { color: var(--accent); }
+.steps button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible, label:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+section { display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.lead { font-size: 1rem; }
+ul.tips { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 6px; }
+
+.btn { appearance: none; font: inherit; font-weight: 600; min-height: 48px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.pick { position: relative; overflow: hidden; }
+.pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.btn.secondary { background: var(--surface); color: var(--accent); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--ink); font-weight: 500; }
+.btn.sm { min-height: 40px; padding: 6px 12px; font-size: .9rem; }
+.btn:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row > .grow { flex: 1 1 140px; min-width: 0; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { appearance: none; font: inherit; font-size: .92rem; min-height: 44px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; padding: 6px 8px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+[hidden] { display: none !important; }
+.note { padding: 9px 12px; border-radius: 8px; font-size: .92rem; background: var(--accent-soft); color: var(--ink); }
+.note.ok { background: var(--accent-soft); color: var(--ok); }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.note.bad { background: var(--bad-soft); color: var(--bad); }
+.warnbox { display: flex; flex-direction: column; gap: 6px; background: var(--warn-soft); color: var(--warn); padding: 9px 12px; border-radius: 8px; font-size: .92rem; }
+
+.stage { position: relative; height: clamp(300px, 56vh, 540px); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #10201F; }
+.stage canvas { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.zoom { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 6px; }
+.zoom button { appearance: none; min-width: 44px; min-height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,.35); background: rgba(10,20,20,.72); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.about { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: .92rem; }
+.about summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.about p { margin: 8px 0 0; }
+.card.inner { background: var(--bg); }
+textarea { resize: vertical; }
+select, textarea, input[type="email"] { font-family: inherit; }
+.autobox { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); }
+.autobox p { margin: 0; font-size: .95rem; }
+.sample-tag { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 6px; background: rgba(10,20,20,.78); color: #FFD400; font-size: .78rem; font-weight: 600; }
+.count { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 6px; background: rgba(10,20,20,.78); color: #fff; font-family: var(--font-num); font-size: .85rem; }
+
+.stats { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; row-gap: 2px; align-items: baseline; }
+.stats .k { color: var(--muted); font-size: .9rem; }
+.stats b { font-weight: 500; text-align: right; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label, .lbl { font-size: .9rem; color: var(--muted); }
+#inName { font-family: var(--font-ui); }
+input[type="number"], input[type="text"], input[type="email"], input[type="tel"], select, textarea { font: inherit; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); color: var(--ink); width: 100%; font-family: var(--font-num); }
+input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 32px; }
+.switch { display: flex; gap: 12px; align-items: flex-start; }
+.switch input { width: 24px; height: 24px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+
+.preview { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 6px; }
+.preview svg { width: 100%; height: 260px; display: block; }
+.preview .g { stroke: var(--line); stroke-width: 1; fill: none; }
+.preview .meas { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; fill: none; }
+.preview .cut { stroke: var(--cut); stroke-width: 2.5; fill: var(--accent-soft); fill-opacity: .55; }
+.preview .prev { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 2 3; fill: none; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); padding: 6px 4px 2px; }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--cut); vertical-align: middle; margin-right: 6px; }
+.legend i.d { border-top: 2px dashed var(--muted); }
+.legend i.p { border-top: 2px dotted var(--warn); }
+
+.papers { display: flex; gap: 8px; }
+.papers label { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font-size: .95rem; }
+.papers input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.papers label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+ul.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+ul.hist li { display: flex; gap: 8px; align-items: stretch; }
+.hist-open { appearance: none; flex: 1; min-width: 0; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; min-height: 52px; display: flex; flex-direction: column; gap: 1px; cursor: pointer; }
+.fine { font-size: .8rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>Stoma Template</h1>
+    <p>Measure a stoma from a photo and print a true-size cutting template.</p>
+  </header>
+
+  <nav class="steps" id="steps" role="tablist" aria-label="Steps">
+    <button type="button" role="tab"><span class="n">1</span>Photo</button>
+    <button type="button" role="tab" disabled><span class="n">2</span>Card</button>
+    <button type="button" role="tab" disabled><span class="n">3</span>Outline</button>
+    <button type="button" role="tab" disabled><span class="n">4</span>Template</button>
+  </nav>
+
+  <!-- 1 PHOTO -->
+  <section id="s1">
+    <div class="card">
+      <h2>Take a photo with a bank card beside the stoma</h2>
+      <ul class="tips">
+        <li>Lay a clean bank card or driving licence flat on the skin next to the stoma, not touching it. Wipe it or put it in a clear bag first.</li>
+        <li>Hold the phone straight above the skin, parallel to it, close enough to fill the frame. Good light, no flash glare.</li>
+        <li>Keep the whole card and the whole stoma in view.</li>
+      </ul>
+      <div class="row">
+        <label class="btn grow pick" id="btnCam">Take photo<input type="file" id="fileCam" accept="image/*" capture="environment"></label>
+        <label class="btn secondary grow pick" id="btnLib">Choose from library<input type="file" id="fileLib" accept="image/*"></label>
+      </div>
+      <p class="note" id="s1msg" hidden></p>
+      <button type="button" class="btn ghost" id="btnSample">Try with an example photo</button>
+      <p class="fine">If &ldquo;Take photo&rdquo; does nothing on your phone, tap &ldquo;Choose from library&rdquo; and pick &ldquo;Take Photo&rdquo; from the menu that appears.</p>
+    </div>
+    <details class="about">
+      <summary>About this tool</summary>
+      <p><b>Trial version for evaluation (version 1.0, October 2026).</b> It is not a medical device and has not been clinically validated. Do not rely on it alone to size an appliance: check against the manufacturer's sizing guide and use clinical judgement.</p>
+      <p><b>How it works.</b> You photograph the stoma with a bank card (85.6 x 53.98 mm) lying flat beside it. The card's four corners give the scale and correct for perspective. You trace the stoma outline, and the app prints a true-size template as a PDF.</p>
+      <p><b>Accuracy.</b> It depends on a flat card, a sharp photo and the phone held parallel to the skin. In tests on simulated photos the card corners were found to within about 1 pixel, which is a small fraction of a millimetre at normal distances. It has not been compared with clinical measurements on real patients.</p>
+      <p><b>Privacy.</b> The photo is processed inside this page and is never uploaded. A patient name, saved measurements and suppliers are stored only in this browser on this device. Nurses trying it out should leave the patient name blank.</p>
+    </details>
+    <p class="fine">A guide only, not a medical device. Your photo is processed inside this page and is never uploaded. Check the fit with your stoma care nurse and your product's sizing guide before cutting.</p>
+
+    <div class="card" id="histWrap" hidden>
+      <h2>Saved measurements</h2>
+      <ul class="hist" id="histList"></ul>
+      <p class="fine">Saved in this browser only: the outline in millimetres and the name you entered, never the photo. Clearing site data removes them.</p>
+    </div>
+  </section>
+
+  <!-- 2 CARD -->
+  <section id="s2" hidden>
+    <p class="lead" id="cardLead">Looking for the card in your photo…</p>
+    <div class="stage">
+      <canvas id="cvCard" aria-label="Photo. Tap the four corners of the card."></canvas>
+      <span class="count" id="cardCount">0/4</span>
+      <span class="sample-tag" hidden>Example photo</span>
+      <div class="zoom"><button type="button" data-ed="card" data-zoom="out" aria-label="Zoom out">−</button><button type="button" data-ed="card" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-ed="card" data-zoom="fit">Fit</button></div>
+    </div>
+    <div class="autobox" id="autoBox" hidden>
+      <p><b>Does the yellow outline sit on the card?</b> If it is a little off, drag a corner. If it is on the wrong thing, choose No.</p>
+      <div class="row">
+        <button type="button" class="btn grow" id="btnAutoYes">Yes, that is the card</button>
+        <button type="button" class="btn secondary grow" id="btnAutoNo">No, I will tap the corners</button>
+      </div>
+    </div>
+    <p class="note" id="cardMsg" hidden></p>
+    <div class="switch" id="snapBox">
+      <input type="checkbox" id="inSnap" checked>
+      <label for="inSnap"><b>Snap to the card's edges</b><br><span class="small muted">Finds the straight edges of the card in the photo, so rounded corners and small tapping errors do not matter. The cyan dashed outline shows what it found.</span></label>
+    </div>
+    <div class="warnbox" id="cardWarn" hidden></div>
+    <div class="seg" role="group" aria-label="Reference object">
+      <button type="button" id="refStd" aria-pressed="true">Bank / ID card</button>
+      <button type="button" id="refCus" aria-pressed="false">Other rectangle</button>
+    </div>
+    <div class="row" id="customBox" hidden>
+      <div class="field grow"><label for="inLong">Long side (mm)</label><input type="number" id="inLong" inputmode="decimal" step="0.1" min="1" value="85.6"></div>
+      <div class="field grow"><label for="inShort">Short side (mm)</label><input type="number" id="inShort" inputmode="decimal" step="0.1" min="1" value="54"></div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn ghost" id="btnCardReset" disabled>Reset corners</button>
+      <button type="button" class="btn ghost" id="btnAutoAgain" hidden>Find card automatically</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn" id="btnCardNext" disabled>Next: outline</button>
+    </div>
+  </section>
+
+  <!-- 3 OUTLINE -->
+  <section id="s3" hidden>
+    <p class="lead">Tap around the stoma where it meets the skin, 8 to 16 points. Tap between two points to add one there. Drag points to fine-tune.</p>
+    <div class="stage">
+      <canvas id="cvOut" aria-label="Photo. Tap around the base of the stoma."></canvas>
+      <span class="sample-tag" hidden>Example photo</span>
+      <div class="zoom"><button type="button" data-ed="out" data-zoom="out" aria-label="Zoom out">−</button><button type="button" data-ed="out" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-ed="out" data-zoom="fit">Fit</button></div>
+    </div>
+    <div class="card"><div class="stats" id="outStats"></div></div>
+    <p class="note" id="outMsg" hidden></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="btnOval">Start with oval</button>
+      <button type="button" class="btn ghost sm" id="btnOutUndo" disabled>Undo</button>
+      <button type="button" class="btn ghost sm" id="btnOutClear" disabled>Clear</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn" id="btnOutNext" disabled>Next: template</button>
+    </div>
+  </section>
+
+  <!-- 4 TEMPLATE -->
+  <section id="s4" hidden>
+    <div class="preview">
+      <svg id="tplSvg" role="img" aria-label="Template preview on a 10 millimetre grid" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend"><span><i></i>Cut line</span><span><i class="d"></i>Measured</span><span id="legendPrev" hidden><i class="p"></i>Previous</span><span>Grid 10 mm</span></div>
+    </div>
+    <div class="card">
+      <div class="stats">
+        <span class="k">Measured stoma</span><b class="num" id="tplMeasured"></b>
+        <span class="k">Cut opening</span><b class="num" id="tplCut"></b>
+        <span class="k">Cut size on paper</span><b class="num" id="tplXY"></b>
+        <span class="k">Stoma area</span><b class="num" id="tplArea"></b>
+      </div>
+      <p class="small muted" id="cmpNote" hidden></p>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label for="inName">Patient name (optional)</label>
+        <input type="text" id="inName" maxlength="60" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Printed at the top of the PDF">
+        <p class="fine">Only printed on the PDF, and kept in this browser if you tap Save to history. It is never uploaded.</p>
+      </div>
+      <div class="field">
+        <label for="inAllow">Allowance around the stoma: <b class="num" id="allowVal">2.0 mm</b></label>
+        <input type="range" id="inAllow" min="0" max="5" step="0.5" value="2">
+        <p class="fine">Makers commonly suggest cutting a few millimetres larger than the stoma. Follow your product's instructions and your stoma nurse's advice.</p>
+      </div>
+      <div class="switch">
+        <input type="checkbox" id="inMirror">
+        <label for="inMirror"><b>Mirror image</b><br><span class="small muted">Turn on if you will trace the template onto the backing paper of the flange, which you see reversed. Check with your stoma nurse.</span></label>
+      </div>
+      <div class="field"><span class="lbl">Paper</span>
+        <div class="papers"><label><input type="radio" name="paper" value="a4" checked>A4</label><label><input type="radio" name="paper" value="letter">US Letter</label></div>
+      </div>
+    </div>
+    <button type="button" class="btn" id="btnPdf">Save PDF template</button>
+    <p class="note" id="pdfMsg" hidden></p>
+    <p class="fine">Print at 100% (actual size). The page has a bank-card box, a 100 mm ruler and X and Y dimension lines, so you can check the scale before cutting.</p>
+    <div class="card" id="sendCard">
+      <h2>Send to your supplier</h2>
+      <div class="field">
+        <label for="selSupplier">Supplier</label>
+        <select id="selSupplier"></select>
+      </div>
+      <div id="supInfo" class="small muted" hidden></div>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="btnSupAdd">Add supplier</button>
+        <button type="button" class="btn ghost sm" id="btnSupEdit" hidden>Edit</button>
+      </div>
+      <div id="supBox" class="card inner" hidden>
+        <div class="field"><label for="supName">Supplier name</label><input type="text" id="supName" maxlength="80" autocomplete="off"></div>
+        <div class="field"><label for="supEmail">Email address</label><input type="email" id="supEmail" maxlength="120" autocomplete="off" inputmode="email" autocapitalize="off"></div>
+        <div class="field"><label for="supPhone">Phone (optional)</label><input type="tel" id="supPhone" maxlength="40" autocomplete="off"></div>
+        <div class="field"><label for="supAcct">Your account or reference number (optional)</label><input type="text" id="supAcct" maxlength="60" autocomplete="off"></div>
+        <div class="field"><label for="supNotes">Notes (optional, for example your product code)</label><textarea id="supNotes" rows="2" maxlength="300"></textarea></div>
+        <p class="note warn" id="supErr" hidden></p>
+        <div class="row">
+          <button type="button" class="btn grow" id="supSave">Save supplier</button>
+          <button type="button" class="btn ghost grow" id="supCancel">Cancel</button>
+          <button type="button" class="btn ghost sm" id="supDelete" hidden>Delete</button>
+        </div>
+        <p class="fine">Suppliers are kept in this browser on this device only, like your history. They are never uploaded.</p>
+      </div>
+      <div class="row">
+        <button type="button" class="btn grow" id="btnShare" hidden>Share PDF (attach in Mail)</button>
+        <button type="button" class="btn secondary grow" id="btnMail">Write the email</button>
+      </div>
+      <button type="button" class="btn ghost" id="btnCopyMsg">Copy the message</button>
+      <p class="note" id="sendMsg" hidden></p>
+      <p class="fine">The email includes the patient name (if you entered one), the X and Y size of the cut line and your reference. A web page cannot attach files to an email by itself: use &ldquo;Share PDF&rdquo; to attach it, or save the PDF first and attach it to the written email.</p>
+    </div>
+    <div class="row">
+      <button type="button" class="btn secondary grow" id="btnSave">Save to history</button>
+      <button type="button" class="btn ghost grow" id="btnAgain">New measurement</button>
+    </div>
+  </section>
+</div>
+
+<script>// Geometry for the stoma template tool. Points are [x, y] arrays.
+// Image space: pixels, y DOWN. Template space: millimetres, y DOWN.
+var Geo = (function () {
+  'use strict';
+
+  function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  function meanPoint(p) {
+    var sx = 0, sy = 0;
+    for (var i = 0; i < p.length; i++) { sx += p[i][0]; sy += p[i][1]; }
+    return [sx / p.length, sy / p.length];
+  }
+
+  // ---- homography (4 points, normalised DLT) -------------------------------
+  function norm(pts) {
+    var c = meanPoint(pts), md = 0, i;
+    for (i = 0; i < pts.length; i++) md += dist(pts[i], c);
+    md /= pts.length;
+    var s = md > 1e-12 ? Math.SQRT2 / md : 1;
+    return { s: s, cx: c[0], cy: c[1] };
+  }
+  function mul(a, b) {
+    var r = new Array(9), i, j, k, sum;
+    for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
+      sum = 0;
+      for (k = 0; k < 3; k++) sum += a[i * 3 + k] * b[k * 3 + j];
+      r[i * 3 + j] = sum;
+    }
+    return r;
+  }
+  function gaussJordan(a) {
+    var n = 8, col, r, c, piv, f, tmp;
+    for (col = 0; col < n; col++) {
+      piv = col;
+      for (r = col + 1; r < n; r++) if (Math.abs(a[r][col]) > Math.abs(a[piv][col])) piv = r;
+      if (Math.abs(a[piv][col]) < 1e-10) return null;
+      tmp = a[col]; a[col] = a[piv]; a[piv] = tmp;
+      for (r = 0; r < n; r++) {
+        if (r === col) continue;
+        f = a[r][col] / a[col][col];
+        if (f === 0) continue;
+        for (c = col; c <= n; c++) a[r][c] -= f * a[col][c];
+      }
+    }
+    var out = [];
+    for (r = 0; r < n; r++) out.push(a[r][n] / a[r][r]);
+    return out;
+  }
+  function homography(src, dst) {
+    if (src.length !== 4 || dst.length !== 4) return null;
+    var ns = norm(src), nd = norm(dst), i;
+    var s = src.map(function (p) { return [(p[0] - ns.cx) * ns.s, (p[1] - ns.cy) * ns.s]; });
+    var d = dst.map(function (p) { return [(p[0] - nd.cx) * nd.s, (p[1] - nd.cy) * nd.s]; });
+    var a = [];
+    for (i = 0; i < 8; i++) a.push([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    for (i = 0; i < 4; i++) {
+      var x = s[i][0], y = s[i][1], u = d[i][0], v = d[i][1];
+      a[2 * i] = [x, y, 1, 0, 0, 0, -u * x, -u * y, u];
+      a[2 * i + 1] = [0, 0, 0, x, y, 1, -v * x, -v * y, v];
+    }
+    var sol = gaussJordan(a);
+    if (!sol) return null;
+    var hn = sol.concat([1]);
+    var fwd = [ns.s, 0, -ns.s * ns.cx, 0, ns.s, -ns.s * ns.cy, 0, 0, 1];
+    var bwd = [1 / nd.s, 0, nd.cx, 0, 1 / nd.s, nd.cy, 0, 0, 1];
+    var h = mul(mul(bwd, hn), fwd);
+    if (Math.abs(h[8]) > 1e-12) { var k = 1 / h[8]; h = h.map(function (v2) { return v2 * k; }); }
+    return h;
+  }
+  function hApply(m, p) {
+    var w = m[6] * p[0] + m[7] * p[1] + m[8];
+    return [(m[0] * p[0] + m[1] * p[1] + m[2]) / w, (m[3] * p[0] + m[4] * p[1] + m[5]) / w];
+  }
+  function hInverse(m) {
+    var a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7], i = m[8];
+    var det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if (Math.abs(det) < 1e-18) return null;
+    return [
+      (e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det,
+      (f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det,
+      (d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det
+    ];
+  }
+
+  // ---- calibration from four card corners -----------------------------------
+  var ID_CARD = { name: 'Bank / ID card (ISO ID-1)', longMm: 85.60, shortMm: 53.98 };
+
+  function calibrate(taps, ref) {
+    if (!taps || taps.length !== 4 || !ref) return null;
+    var longMm = Math.max(ref.longMm, ref.shortMm), shortMm = Math.min(ref.longMm, ref.shortMm);
+    if (!(shortMm > 0)) return null;
+    var c = meanPoint(taps);
+    var srt = taps.slice().sort(function (p, q) {
+      return Math.atan2(p[1] - c[1], p[0] - c[0]) - Math.atan2(q[1] - c[1], q[0] - c[0]);
+    });
+    var sign = 0, i;
+    for (i = 0; i < 4; i++) {
+      var a = srt[i], b = srt[(i + 1) % 4], d = srt[(i + 2) % 4];
+      var cross = (b[0] - a[0]) * (d[1] - b[1]) - (b[1] - a[1]) * (d[0] - b[0]);
+      if (Math.abs(cross) < 1e-9) return null;
+      var sg = cross > 0 ? 1 : -1;
+      if (sign === 0) sign = sg; else if (sg !== sign) return null;
+    }
+    var o = srt;
+    var e01 = dist(o[0], o[1]), e12 = dist(o[1], o[2]), e23 = dist(o[2], o[3]), e30 = dist(o[3], o[0]);
+    if (e12 + e30 > e01 + e23) o = [o[1], o[2], o[3], o[0]];
+    var a01 = dist(o[0], o[1]), a12 = dist(o[1], o[2]), a23 = dist(o[2], o[3]), a30 = dist(o[3], o[0]);
+    var longPx = (a01 + a23) / 2, shortPx = (a12 + a30) / 2;
+    if (longPx < 1 || shortPx < 1) return null;
+    var h = homography(o, [[0, 0], [longMm, 0], [longMm, shortMm], [0, shortMm]]);
+    if (!h) return null;
+    var inv = hInverse(h);
+    if (!inv) return null;
+    return {
+      toMm: h, toImg: inv, mmPerPx: longMm / longPx,
+      aspectError: (longPx / shortPx) / (longMm / shortMm) - 1,
+      skew: Math.max(Math.abs(a01 - a23) / longPx, Math.abs(a12 - a30) / shortPx),
+      corners: o, ref: ref
+    };
+  }
+
+  // Image points -> millimetres, rotated so "down in the photo" is +y.
+  function toMmUpright(cal, pts) {
+    if (!pts.length) return [];
+    var c = meanPoint(pts);
+    var a = hApply(cal.toMm, c), b = hApply(cal.toMm, [c[0], c[1] + 100]);
+    var rot = Math.PI / 2 - Math.atan2(b[1] - a[1], b[0] - a[0]);
+    var cs = Math.cos(rot), sn = Math.sin(rot);
+    return pts.map(function (p) {
+      var m = hApply(cal.toMm, p), dx = m[0] - a[0], dy = m[1] - a[1];
+      return [dx * cs - dy * sn, dx * sn + dy * cs];
+    });
+  }
+
+  // ---- polygon helpers ------------------------------------------------------
+  function signedArea(p) {
+    var s = 0, n = p.length, i;
+    for (i = 0; i < n; i++) { var a = p[i], b = p[(i + 1) % n]; s += a[0] * b[1] - b[0] * a[1]; }
+    return s / 2;
+  }
+  function perimeter(p) {
+    var s = 0, n = p.length, i;
+    for (i = 0; i < n; i++) s += dist(p[i], p[(i + 1) % n]);
+    return s;
+  }
+  function areaCentroid(p) {
+    var a2 = 0, cx = 0, cy = 0, n = p.length, i;
+    for (i = 0; i < n; i++) {
+      var u = p[i], v = p[(i + 1) % n], cr = u[0] * v[1] - v[0] * u[1];
+      a2 += cr; cx += (u[0] + v[0]) * cr; cy += (u[1] + v[1]) * cr;
+    }
+    if (Math.abs(a2) < 1e-12) return meanPoint(p);
+    return [cx / (3 * a2), cy / (3 * a2)];
+  }
+  function centreOnCentroid(p) {
+    var c = areaCentroid(p);
+    return p.map(function (q) { return [q[0] - c[0], q[1] - c[1]]; });
+  }
+
+  function knot(a, b) { return Math.max(Math.sqrt(dist(a, b)), 1e-6); }
+  function lerpT(a, b, ta, tb, t) {
+    var k = (t - ta) / (tb - ta);
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  }
+  // Closed centripetal Catmull-Rom spline through the control points.
+  function catmullRomClosed(c, sps) {
+    sps = sps || 16;
+    var n = c.length;
+    if (n < 3) return c.slice();
+    var out = [], i, s;
+    for (i = 0; i < n; i++) {
+      var p0 = c[(i - 1 + n) % n], p1 = c[i], p2 = c[(i + 1) % n], p3 = c[(i + 2) % n];
+      var t0 = 0, t1 = t0 + knot(p0, p1), t2 = t1 + knot(p1, p2), t3 = t2 + knot(p2, p3);
+      for (s = 0; s < sps; s++) {
+        var t = t1 + (t2 - t1) * s / sps;
+        var a1 = lerpT(p0, p1, t0, t1, t), a2 = lerpT(p1, p2, t1, t2, t), a3 = lerpT(p2, p3, t2, t3, t);
+        var b1 = lerpT(a1, a2, t0, t2, t), b2 = lerpT(a2, a3, t1, t3, t);
+        out.push(lerpT(b1, b2, t1, t2, t));
+      }
+    }
+    return out;
+  }
+  function resampleClosed(poly, n) {
+    var m = poly.length, cum = [0], i;
+    if (m < 2) return poly.slice();
+    for (i = 0; i < m; i++) cum.push(cum[i] + dist(poly[i], poly[(i + 1) % m]));
+    var total = cum[m];
+    if (total <= 0) return poly.slice();
+    var out = [], seg = 0, k;
+    for (k = 0; k < n; k++) {
+      var target = total * k / n;
+      while (seg < m - 1 && cum[seg + 1] < target) seg++;
+      var sl = cum[seg + 1] - cum[seg], t = sl === 0 ? 0 : (target - cum[seg]) / sl;
+      var a = poly[seg], b = poly[(seg + 1) % m];
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+    return out;
+  }
+  // Offset a closed polygon outwards by d (inwards if negative).
+  function offsetClosed(poly, d) {
+    var n = poly.length;
+    if (n < 3 || d === 0) return poly.slice();
+    var ccw = signedArea(poly) > 0;
+    function normal(a, b) {
+      var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+      if (len === 0) return [0, 0];
+      return ccw ? [dy / len, -dx / len] : [-dy / len, dx / len];
+    }
+    var out = [], i;
+    for (i = 0; i < n; i++) {
+      var prev = poly[(i - 1 + n) % n], cur = poly[i], next = poly[(i + 1) % n];
+      var n1 = normal(prev, cur), n2 = normal(cur, next);
+      var ax = n1[0] + n2[0], ay = n1[1] + n2[1], l = Math.hypot(ax, ay);
+      if (l < 1e-9) { out.push([cur[0] + n1[0] * d, cur[1] + n1[1] * d]); continue; }
+      ax /= l; ay /= l;
+      var cosHalf = Math.max(0.5, ax * n1[0] + ay * n1[1]);
+      out.push([cur[0] + ax * d / cosHalf, cur[1] + ay * d / cosHalf]);
+    }
+    return out;
+  }
+  // Narrowest / widest caliper width, area, perimeter.
+  function measure(poly) {
+    if (poly.length < 3) return { areaMm2: 0, perimeterMm: 0, minMm: 0, maxMm: 0 };
+    var minW = Infinity, maxW = 0, deg, i;
+    for (deg = 0; deg < 180; deg += 0.5) {
+      var th = deg * Math.PI / 180, ux = Math.cos(th), uy = Math.sin(th), lo = Infinity, hi = -Infinity;
+      for (i = 0; i < poly.length; i++) {
+        var v = poly[i][0] * ux + poly[i][1] * uy;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      var w = hi - lo;
+      if (w < minW) minW = w;
+      if (w > maxW) maxW = w;
+    }
+    return { areaMm2: Math.abs(signedArea(poly)), perimeterMm: perimeter(poly), minMm: minW, maxMm: maxW };
+  }
+
+  return {
+    dist: dist, meanPoint: meanPoint, homography: homography, hApply: hApply, hInverse: hInverse,
+    ID_CARD: ID_CARD, calibrate: calibrate, toMmUpright: toMmUpright,
+    signedArea: signedArea, perimeter: perimeter, areaCentroid: areaCentroid,
+    centreOnCentroid: centreOnCentroid, catmullRomClosed: catmullRomClosed,
+    resampleClosed: resampleClosed, offsetClosed: offsetClosed, measure: measure
+  };
+})();
+</script><script>// Snap four roughly tapped card corners to the card's real straight edges.
+// For each side, find the strongest brightness step along many short lines that cross the edge,
+// fit a straight line through those points (robustly), then intersect neighbouring lines.
+// Rounded card corners do not matter: only the middle of each side is used.
+var Edges = (function () {
+  'use strict';
+
+  function bil(l, w, h, x, y) {
+    if (x < 0 || y < 0 || x > w - 1 || y > h - 1) return NaN;
+    var x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(x0 + 1, w - 1), y1 = Math.min(y0 + 1, h - 1);
+    var fx = x - x0, fy = y - y0;
+    var a = l[y0 * w + x0], b = l[y0 * w + x1], c = l[y1 * w + x0], d = l[y1 * w + x1];
+    return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+  }
+  function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  function median(a) { var s = a.slice().sort(function (x, y) { return x - y; }); return s[Math.floor(s.length / 2)]; }
+
+  // One side: p0 -> p1. Returns {a, b, T, N, p0, len, inliers, stations, rms} or null.
+  function fitSide(l, w, h, p0, p1, S) {
+    var dx = p1[0] - p0[0], dy = p1[1] - p0[1], len = Math.hypot(dx, dy);
+    if (len < 20) return null;
+    var T = [dx / len, dy / len], N = [-T[1], T[0]];
+    var STEP = 0.5, nS = Math.round(2 * S / STEP) + 1, TW = [-4, -2, 0, 2, 4];
+    var stations = 41, pts = [], i, k, j;
+    for (i = 0; i < stations; i++) {
+      var t = len * (0.15 + 0.70 * i / (stations - 1));
+      var cx = p0[0] + T[0] * t, cy = p0[1] + T[1] * t;
+      var prof = new Array(nS), bad = false;
+      for (k = 0; k < nS; k++) {
+        var s = -S + k * STEP, sum = 0;
+        for (j = 0; j < TW.length; j++) {
+          // coordinates are canvas coordinates (pixel centres at +0.5), like the user's taps
+          var v = bil(l, w, h, cx + N[0] * s + T[0] * TW[j] - 0.5, cy + N[1] * s + T[1] * TW[j] - 0.5);
+          if (v !== v) { bad = true; break; }
+          sum += v;
+        }
+        if (bad) break;
+        prof[k] = sum / TW.length;
+      }
+      if (bad) continue;
+      // gradient over +-1 px (two samples either side), brightness per pixel
+      var best = -1, bestAbs = 0, g = new Array(nS);
+      for (k = 0; k < nS; k++) g[k] = (k >= 3 && k < nS - 3) ? (prof[k + 3] - prof[k - 3]) / 3 : 0;
+      for (k = 4; k < nS - 4; k++) { var ag = Math.abs(g[k]); if (ag > bestAbs) { bestAbs = ag; best = k; } }
+      if (best < 0 || bestAbs < 3) continue;
+      var a0 = Math.abs(g[best - 1]), a1 = bestAbs, a2 = Math.abs(g[best + 1]);
+      var den = a0 - 2 * a1 + a2, off = den !== 0 ? 0.5 * (a0 - a2) / den : 0;
+      if (off > 1) off = 1; else if (off < -1) off = -1;
+      pts.push({ t: t, s: -S + (best + off) * STEP, str: bestAbs, sign: g[best] > 0 ? 1 : -1 });
+    }
+    if (pts.length < 10) return null;
+    // keep the majority direction of brightness change (inside card vs outside)
+    var pos = 0, neg = 0;
+    pts.forEach(function (p) { if (p.sign > 0) pos++; else neg++; });
+    var sg = pos >= neg ? 1 : -1;
+    pts = pts.filter(function (p) { return p.sign === sg; });
+    if (pts.length < 10) return null;
+    // robust straight line s = a + b*t (RANSAC then least squares on inliers)
+    var bestIn = null, TH = 1.2, it, n = pts.length, seed = 12345;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    for (it = 0; it < 150; it++) {
+      var i1 = Math.floor(rnd() * n), i2 = Math.floor(rnd() * n);
+      if (i1 === i2 || Math.abs(pts[i1].t - pts[i2].t) < len * 0.2) continue;
+      var bb = (pts[i2].s - pts[i1].s) / (pts[i2].t - pts[i1].t), aa = pts[i1].s - bb * pts[i1].t;
+      var inl = pts.filter(function (p) { return Math.abs(p.s - (aa + bb * p.t)) < TH; });
+      if (!bestIn || inl.length > bestIn.length) bestIn = inl;
+    }
+    if (!bestIn || bestIn.length < Math.max(10, 0.5 * 41)) return null;
+    var pass, inl2 = bestIn, a = 0, b = 0;
+    for (pass = 0; pass < 3; pass++) {
+      var m = inl2.length, st = 0, ss = 0, stt = 0, sts = 0;
+      inl2.forEach(function (p) { st += p.t; ss += p.s; stt += p.t * p.t; sts += p.t * p.s; });
+      var dd = m * stt - st * st;
+      if (Math.abs(dd) < 1e-9) return null;
+      b = (m * sts - st * ss) / dd; a = (ss - b * st) / m;
+      var again = pts.filter(function (p) { return Math.abs(p.s - (a + b * p.t)) < TH; });
+      if (again.length < 10) break;
+      inl2 = again;
+    }
+    var rss = 0;
+    inl2.forEach(function (p) { var r = p.s - (a + b * p.t); rss += r * r; });
+    return { sg: sg, a: a, b: b, T: T, N: N, p0: p0, len: len, inliers: inl2.length, stations: 41, rms: Math.sqrt(rss / inl2.length) };
+  }
+
+  function lineHomog(f) {
+    var P = function (t) { var s = f.a + f.b * t; return [f.p0[0] + f.T[0] * t + f.N[0] * s, f.p0[1] + f.T[1] * t + f.N[1] * s, 1]; };
+    var A = P(0), B = P(f.len);
+    return [A[1] * B[2] - A[2] * B[1], A[2] * B[0] - A[0] * B[2], A[0] * B[1] - A[1] * B[0]];
+  }
+  function meet(l1, l2) {
+    var x = l1[1] * l2[2] - l1[2] * l2[1], y = l1[2] * l2[0] - l1[0] * l2[2], z = l1[0] * l2[1] - l1[1] * l2[0];
+    if (Math.abs(z) < 1e-12) return null;
+    return [x / z, y / z];
+  }
+
+  // One pass: fit each side within +-S px of the given quad and intersect the fitted lines.
+  function pass(luma, w, h, corners, S) {
+    var sides = [], i, rms = 0;
+    for (i = 0; i < 4; i++) {
+      var f = fitSide(luma, w, h, corners[i], corners[(i + 1) % 4], S);
+      if (!f) return { ok: false, reason: 'edge-' + i };
+      sides.push(f); rms = Math.max(rms, f.rms);
+    }
+    // all four sides must change brightness the same way going inwards (card brighter, or darker, than its surroundings)
+    var area = 0;
+    for (i = 0; i < 4; i++) area += corners[i][0] * corners[(i + 1) % 4][1] - corners[(i + 1) % 4][0] * corners[i][1];
+    var orient = area >= 0 ? 1 : -1, pol = sides[0].sg * orient;
+    for (i = 1; i < 4; i++) if (sides[i].sg * orient !== pol) return { ok: false, reason: 'polarity' };
+    var lines = sides.map(lineHomog), out = [];
+    for (i = 0; i < 4; i++) {
+      var c = meet(lines[(i + 3) % 4], lines[i]);
+      if (!c || c[0] !== c[0]) return { ok: false, reason: 'parallel' };
+      out.push(c);
+    }
+    return { ok: true, corners: out, rms: rms };
+  }
+  function sizeOk(a, b) { // refined quad must keep roughly the same shape as the tapped one
+    for (var i = 0; i < 4; i++) {
+      var r = dist(b[i], b[(i + 1) % 4]) / Math.max(1, dist(a[i], a[(i + 1) % 4]));
+      if (r < 0.75 || r > 1.33) return false;
+    }
+    return true;
+  }
+
+  // corners: 4 points in order around the quad (as returned in Geo.calibrate(...).corners).
+  // Searches +-S, then wider if needed, then re-fits tightly around what it found.
+  // Returns {ok, corners, maxShift, rms, reason}.
+  function refineQuad(luma, w, h, corners) {
+    if (!luma || corners.length !== 4) return { ok: false, reason: 'input' };
+    var i, minSide = Infinity, reason = 'edge', m, S0;
+    for (i = 0; i < 4; i++) minSide = Math.min(minSide, dist(corners[i], corners[(i + 1) % 4]));
+    S0 = Math.max(8, Math.min(40, 0.06 * minSide));
+    var mults = [1, 2, 3];
+    for (m = 0; m < mults.length; m++) {
+      var S = S0 * mults[m];
+      var r = pass(luma, w, h, corners, S);
+      if (!r.ok) { reason = r.reason; continue; }
+      if (!sizeOk(corners, r.corners)) { reason = 'shape'; continue; }
+      var r2 = pass(luma, w, h, r.corners, 6);          // tight second pass, away from other edges
+      var fin = (r2.ok && sizeOk(corners, r2.corners)) ? r2 : r;
+      var maxShift = 0;
+      for (i = 0; i < 4; i++) maxShift = Math.max(maxShift, dist(fin.corners[i], corners[i]));
+      if (maxShift > Math.max(2.5 * S, 30)) { reason = 'far'; continue; }
+      return { ok: true, corners: fin.corners, maxShift: maxShift, rms: fin.rms, wide: mults[m] };
+    }
+    return { ok: false, reason: reason };
+  }
+
+  return { refineQuad: refineQuad };
+})();
+</script><script>// Find a bank card (a rectangle of known shape) in a photo without any taps.
+// Method: downscale, find strong thin edges, vote for straight lines (Hough), then try combinations of four lines
+// that form a card-shaped quadrilateral (checked through the perspective calibration), and keep the best-supported one.
+var AutoCard = (function () {
+  'use strict';
+  var DEG = Math.PI / 180, COS = [], SIN = [], i0;
+  for (i0 = 0; i0 < 180; i0++) { COS.push(Math.cos(i0 * DEG)); SIN.push(Math.sin(i0 * DEG)); }
+
+  function downscale(l, w, h, k) {
+    var sw = Math.max(8, Math.round(w * k)), sh = Math.max(8, Math.round(h * k)), g = new Float32Array(sw * sh), x, y, i, j;
+    for (y = 0; y < sh; y++) {
+      var y0 = Math.floor(y / k), y1 = Math.min(h, Math.max(y0 + 1, Math.floor((y + 1) / k)));
+      for (x = 0; x < sw; x++) {
+        var x0 = Math.floor(x / k), x1 = Math.min(w, Math.max(x0 + 1, Math.floor((x + 1) / k))), s = 0, n = 0;
+        for (j = y0; j < y1; j++) for (i = x0; i < x1; i++) { s += l[j * w + i]; n++; }
+        g[y * sw + x] = s / n;
+      }
+    }
+    return { g: g, sw: sw, sh: sh };
+  }
+  function bil(g, w, h, x, y) {
+    if (x < 0 || y < 0 || x > w - 1 || y > h - 1) return NaN;
+    var x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(x0 + 1, w - 1), y1 = Math.min(y0 + 1, h - 1), fx = x - x0, fy = y - y0;
+    return (g[y0 * w + x0] * (1 - fx) + g[y0 * w + x1] * fx) * (1 - fy) + (g[y1 * w + x0] * (1 - fx) + g[y1 * w + x1] * fx) * fy;
+  }
+  function sameLine(a, b) {
+    var dt = Math.abs(a.t - b.t), rb = b.r;
+    if (dt > 90) { dt = 180 - dt; rb = -b.r; }
+    return dt < 6 && Math.abs(a.r - rb) < 10;
+  }
+  function meet(a, b) {
+    var c1 = Math.cos(a.t * DEG), s1 = Math.sin(a.t * DEG), c2 = Math.cos(b.t * DEG), s2 = Math.sin(b.t * DEG), det = c1 * s2 - s1 * c2;
+    if (Math.abs(det) < 1e-6) return null;
+    return [(a.r * s2 - b.r * s1) / det, (c1 * b.r - c2 * a.r) / det];
+  }
+  function angDiff(a, b) { var d = Math.abs(a - b) % 180; return d > 90 ? 180 - d : d; } // between two line directions, 0..90
+
+  // Edge map: Sobel + thin (non-maximum suppression). Returns arrays for the downscaled image.
+  function edgeMap(g, w, h) {
+    var mag = new Float32Array(w * h), dir = new Int16Array(w * h), gxA = new Float32Array(w * h), gyA = new Float32Array(w * h), x, y;
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) {
+      var p = y * w + x;
+      var gx = (g[p - w + 1] + 2 * g[p + 1] + g[p + w + 1]) - (g[p - w - 1] + 2 * g[p - 1] + g[p + w - 1]);
+      var gy = (g[p + w - 1] + 2 * g[p + w] + g[p + w + 1]) - (g[p - w - 1] + 2 * g[p - w] + g[p - w + 1]);
+      gxA[p] = gx; gyA[p] = gy; mag[p] = Math.sqrt(gx * gx + gy * gy) / 4;
+    }
+    // threshold: a high percentile of the magnitudes
+    var hist = new Uint32Array(256), n = 0;
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) { hist[Math.min(255, mag[y * w + x] | 0)]++; n++; }
+    var acc = 0, thr = 0, b;
+    for (b = 255; b >= 0; b--) { acc += hist[b]; if (acc > n * 0.12) { thr = b; break; } }
+    thr = Math.max(5, thr);
+    var nms = new Float32Array(w * h);
+    var M = 4; // ignore the outermost pixels: borders, vignetting and padding are not card edges
+    for (y = M; y < h - M; y++) for (x = M; x < w - M; x++) {
+      var q = y * w + x, m = mag[q];
+      if (m < thr) continue;
+      var ox = Math.round(gxA[q] / (m * 4)), oy = Math.round(gyA[q] / (m * 4));
+      if (m >= mag[q + oy * w + ox] && m >= mag[q - oy * w - ox]) {
+        nms[q] = m;
+        var a = Math.round(Math.atan2(gyA[q], gxA[q]) / DEG); a = ((a % 180) + 180) % 180; dir[q] = a;
+      }
+    }
+    return { nms: nms, dir: dir, thr: thr };
+  }
+
+  function houghLines(em, w, h, maxLines) {
+    var diag = Math.ceil(Math.sqrt(w * w + h * h)), R = 2 * diag + 1, acc = new Float32Array(180 * R), x, y, d, T;
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) {
+      var m = em.nms[y * w + x]; if (!m) continue;
+      var t0 = em.dir[y * w + x];
+      for (d = -5; d <= 5; d++) {
+        T = (t0 + d + 180) % 180;
+        var r = Math.round(x * COS[T] + y * SIN[T]) + diag;
+        acc[T * R + r] += Math.min(m, 25);
+      }
+    }
+    var peaks = [], t, r, best = 0;
+    for (t = 0; t < 180; t++) for (r = 0; r < R; r++) if (acc[t * R + r] > best) best = acc[t * R + r];
+    var floor = best * 0.1;
+    for (t = 0; t < 180; t++) for (r = 4; r < R - 4; r++) {
+      var v = acc[t * R + r]; if (v < floor) continue;
+      var isMax = true, dt, dr;
+      for (dt = -3; dt <= 3 && isMax; dt++) for (dr = -4; dr <= 4; dr++) {
+        if (!dt && !dr) continue;
+        var tt = (t + dt + 180) % 180;
+        if (acc[tt * R + r + dr] > v || (acc[tt * R + r + dr] === v && (dt < 0 || (dt === 0 && dr < 0)))) { isMax = false; break; }
+      }
+      if (isMax) peaks.push({ t: t, r: r - diag, v: v });
+    }
+    peaks.sort(function (a, b) { return b.v - a.v; });
+    var out = [];
+    peaks.forEach(function (p) {
+      if (out.length >= maxLines) return;
+      for (var i = 0; i < out.length; i++) if (sameLine(p, out[i])) return;
+      out.push(p);
+    });
+    return out;
+  }
+
+  // Re-fit each Hough line to the edge pixels that actually lie along it (orthogonal least squares).
+  function refineLines(lines, em, w, h) {
+    var px = [], x, y;
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) if (em.nms[y * w + x]) px.push(y * w + x);
+    var out = [];
+    lines.forEach(function (ln) {
+      var cur = { t: ln.t, r: ln.r, v: ln.v }, it, ok = true, RAD = [12, 8, 5, 3];
+      for (it = 0; it < RAD.length && ok; it++) {
+        var c = Math.cos(cur.t * DEG), s = Math.sin(cur.t * DEG), n = 0, sw = 0, mx = 0, my = 0, sxx = 0, sxy = 0, syy = 0, pts = [], i;
+        for (i = 0; i < px.length; i++) {
+          var p = px[i], X = p % w, Y = (p - X) / w, d = X * c + Y * s - cur.r;
+          if (Math.abs(d) > RAD[it] || angDiff(em.dir[p], cur.t) > 25) continue;
+          var m = 1; pts.push([X, Y, m]); sw += m; mx += X * m; my += Y * m;
+        }
+        if (pts.length < 20) { if (it === 0) ok = false; break; }
+        mx /= sw; my /= sw;
+        pts.forEach(function (q) { var dx = q[0] - mx, dy = q[1] - my; sxx += q[2] * dx * dx; sxy += q[2] * dx * dy; syy += q[2] * dy * dy; });
+        var phi = 0.5 * Math.atan2(2 * sxy, sxx - syy), t = phi / DEG + 90; t = ((t % 180) + 180) % 180;
+        cur = { t: t, r: mx * Math.cos(t * DEG) + my * Math.sin(t * DEG), v: ln.v };
+      }
+      if (ok) out.push(cur);
+    });
+    var uniq = [];
+    out.forEach(function (p) { for (var i = 0; i < uniq.length; i++) if (sameLine(p, uniq[i])) return; uniq.push(p); });
+    return uniq;
+  }
+
+  function cross(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+
+  // How well is the quad's boundary supported by real edges, and is the inside consistently lighter/darker?
+  function score(q, g, em, w, h) {
+    var N = 48, cx = 0, cy = 0, i, j, d;
+    q.forEach(function (p) { cx += p[0] / 4; cy += p[1] / 4; });
+    var supp = [], con = [];
+    for (i = 0; i < 4; i++) {
+      var a = q[i], b = q[(i + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+      if (len < 20) return null;
+      var nx = -dy / len, ny = dx / len;
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      if ((cx - mx) * nx + (cy - my) * ny < 0) { nx = -nx; ny = -ny; }        // inward
+      var nAng = Math.atan2(ny, nx) / DEG, hits = 0, valid = 0, cs = [];
+      for (j = 0; j < N; j++) {
+        var t = 0.1 + 0.8 * (j + 0.5) / N, px = a[0] + dx * t, py = a[1] + dy * t;
+        valid++;
+        var found = false;
+        for (d = -3; d <= 3 && !found; d++) {
+          var X = Math.round(px + nx * d), Y = Math.round(py + ny * d);
+          if (X < 1 || Y < 1 || X >= w - 1 || Y >= h - 1) continue;
+          var m = em.nms[Y * w + X];
+          if (m && angDiff(em.dir[Y * w + X], nAng) < 18) found = true;
+        }
+        if (found) hits++;
+        var vin = bil(g, w, h, px + nx * 6, py + ny * 6), vout = bil(g, w, h, px - nx * 6, py - ny * 6);
+        if (vin === vin && vout === vout) cs.push(vin - vout);
+      }
+      cs.sort(function (p, q) { return p - q; });
+      supp.push(hits / valid); con.push(cs.length ? cs[cs.length >> 1] : 0);
+    }
+    var minS = Math.min.apply(null, supp), meanS = (supp[0] + supp[1] + supp[2] + supp[3]) / 4;
+    var sgn = con[0] >= 0 ? 1 : -1, ok = true;
+    con.forEach(function (c) { if (c * sgn < 4) ok = false; });
+    return { supp: supp.map(function (x) { return +x.toFixed(2); }), con: con.map(function (x) { return +x.toFixed(1); }), minS: minS, meanS: meanS, polarityOk: ok, contrast: Math.min.apply(null, con.map(function (c) { return Math.abs(c); })) };
+  }
+
+  // luma: Uint8Array w*h. geo: the Geo module. ref: {longMm, shortMm}. Returns {ok, corners (full-size px), score} or {ok:false, reason}.
+  function detect(luma, w, h, geo, ref) {
+    if (!luma || !geo) return { ok: false, reason: 'input' };
+    var k = Math.min(1, 640 / Math.max(w, h)), ds = downscale(luma, w, h, k), g = ds.g, sw = ds.sw, sh = ds.sh;
+    var em = edgeMap(g, sw, sh), lines = refineLines(houghLines(em, sw, sh, 20), em, sw, sh);
+    if (lines.length < 4) return { ok: false, reason: 'few-lines' };
+    var best = null, n = lines.length, a, b, c, d, pr;
+    var minArea = 0.015 * sw * sh, maxArea = 0.7 * sw * sh;
+    function consider(A, B, C, D) { // A,B opposite; C,D opposite
+      if (angDiff(lines[A].t, lines[B].t) > 35 || angDiff(lines[C].t, lines[D].t) > 35) return;
+      var sets = [[A, C], [C, B], [B, D], [D, A]];
+      for (var s = 0; s < 4; s++) { var ang = angDiff(lines[sets[s][0]].t, lines[sets[s][1]].t); if (ang < 40) return; }
+      var q = [meet(lines[A], lines[C]), meet(lines[C], lines[B]), meet(lines[B], lines[D]), meet(lines[D], lines[A])];
+      var i;
+      for (i = 0; i < 4; i++) { if (!q[i]) return; if (q[i][0] < -0.05 * sw || q[i][0] > 1.05 * sw || q[i][1] < -0.05 * sh || q[i][1] > 1.05 * sh) return; }
+      var s0 = cross(q[0], q[1], q[2]), sg = s0 >= 0 ? 1 : -1;
+      for (i = 0; i < 4; i++) if (cross(q[i], q[(i + 1) % 4], q[(i + 2) % 4]) * sg <= 0) return;   // convex
+      var area = Math.abs(cross(q[0], q[1], q[2]) + cross(q[0], q[2], q[3])) / 2;
+      if (area < minArea || area > maxArea) return;
+      var cal = geo.calibrate(q, ref);
+      if (!cal || Math.abs(cal.aspectError) > 0.2 || cal.skew > 0.3) return;
+      var sc = score(q, g, em, sw, sh);
+      if (!sc || !sc.polarityOk || sc.minS < 0.55 || sc.meanS < 0.7) return;
+      var rank = sc.meanS + 0.5 * sc.minS - 1.5 * Math.abs(cal.aspectError) - 0.5 * cal.skew;
+      if (!best || rank > best.rank) best = { rank: rank, q: q, sc: sc, aspect: cal.aspectError };
+    }
+    for (a = 0; a < n; a++) for (b = a + 1; b < n; b++) for (c = b + 1; c < n; c++) for (d = c + 1; d < n; d++) {
+      consider(a, b, c, d); consider(a, c, b, d); consider(a, d, b, c);
+    }
+    if (!best) return { ok: false, reason: 'no-card' };
+    return { ok: true, corners: best.q.map(function (p) { return [p[0] / k, p[1] / k]; }), score: best.rank, support: best.sc.minS, aspectError: best.aspect };
+  }
+
+  return { detect: detect, _internals: { downscale: downscale, edgeMap: edgeMap, houghLines: houghLines, score: score } };
+})();
+</script>
+<script>// Minimal one-page PDF writer for the true-size template (ASCII only, Helvetica).
+var TemplatePdf = (function () {
+  'use strict';
+  var PT = 72 / 25.4; // points per millimetre
+
+  function f(n) { return (Math.round(n * 1000) / 1000).toString(); }
+  // Names are typed by the user. The PDF font is Latin-1 (WinAnsi), so keep accents such as
+  // a-acute and o-acute, turn curly quotes and dashes into plain ones, and replace the rest.
+  function cleanName(s) {
+    return String(s || '').normalize('NFC').trim()
+      .replace(/[‘’ʼ]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-')
+      .replace(/[^\x20-\x7E\xA0-\xFF]/g, '?').slice(0, 60);
+  }
+  function esc(s) { return String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'); }
+
+  var PAPERS = {
+    a4: { name: 'A4', w: 210, h: 297 },
+    letter: { name: 'US Letter', w: 215.9, h: 279.4 }
+  };
+
+  // Horizontal (X) and vertical (Y) extent of a shape, in mm, as it appears on the printed page.
+  function extents(pts) {
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    pts.forEach(function (p) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+    return { x0: x0, x1: x1, y0: y0, y1: y1, x: x1 - x0, y: y1 - y0 };
+  }
+  // Does the cut shape (plus room for its dimension lines) fit on the paper? Layout constants shared with build().
+  var REGION_TOP = 38, BOTTOM_RESERVE = 108;
+  function fits(cutMm, paperKey) {
+    var paper = PAPERS[paperKey] || PAPERS.a4, mx = 0, my = 0;
+    cutMm.forEach(function (q) { mx = Math.max(mx, Math.abs(q[0])); my = Math.max(my, Math.abs(q[1])); });
+    return 2 * my + 22 <= paper.h - BOTTOM_RESERVE - REGION_TOP && 2 * mx + 80 <= paper.w;
+  }
+
+  // opts: stomaMm, cutMm (centred, y down), mirrored, paper, allowanceMm, stats {minMm,maxMm,areaMm2},
+  //       cutStats, refName, dateLabel
+  function build(opts) {
+    var paper = PAPERS[opts.paper] || PAPERS.a4;
+    var W = paper.w, H = paper.h; // mm
+    var cmds = [];
+    function X(xmm) { return f(xmm * PT); }
+    function Y(ymm) { return f((H - ymm) * PT); } // ymm measured from the top
+
+    function stroke(width, gray, dash) {
+      cmds.push('q ' + f(gray) + ' G ' + f(width) + ' w ' + (dash ? '[' + f(dash[0] * PT) + ' ' + f(dash[1] * PT) + '] 0 d' : '[] 0 d'));
+    }
+    function line(x1, y1, x2, y2, width, gray, dash) {
+      stroke(width, gray, dash);
+      cmds.push(X(x1) + ' ' + Y(y1) + ' m ' + X(x2) + ' ' + Y(y2) + ' l S Q');
+    }
+    function poly(pts, ox, oy, width, gray, dash) {
+      stroke(width, gray, dash);
+      var s = '';
+      for (var i = 0; i < pts.length; i++) s += X(ox + pts[i][0]) + ' ' + Y(oy + pts[i][1]) + (i === 0 ? ' m ' : ' l ');
+      cmds.push(s + 'h S Q');
+    }
+    function text(xmm, ymm, str, size, bold) {
+      cmds.push('BT /' + (bold ? 'F2' : 'F1') + ' ' + f(size) + ' Tf ' + X(xmm) + ' ' + Y(ymm) + ' Td (' + esc(str) + ') Tj ET');
+    }
+    function wrapped(xmm, ymm, str, size, widthMm, bold) {
+      var maxChars = Math.max(10, Math.floor(widthMm * PT / (size * 0.53)));
+      var words = String(str).split(' '), lines = [], cur = '';
+      words.forEach(function (w) {
+        if ((cur + ' ' + w).trim().length > maxChars) { lines.push(cur); cur = w; } else { cur = (cur + ' ' + w).trim(); }
+      });
+      if (cur) lines.push(cur);
+      var lh = size * 1.3 / PT;
+      lines.forEach(function (ln, i) { text(xmm, ymm + i * lh, ln, size, bold); });
+      return ymm + lines.length * lh;
+    }
+
+    var mir = opts.mirrored;
+    function prep(pts) { return mir ? pts.map(function (p) { return [-p[0], p[1]]; }) : pts; }
+    var stoma = prep(opts.stomaMm), cut = prep(opts.cutMm);
+
+    var maxX = 0, maxY = 0;
+    cut.forEach(function (p) { maxX = Math.max(maxX, Math.abs(p[0])); maxY = Math.max(maxY, Math.abs(p[1])); });
+    var regionTop = REGION_TOP, regionBottom = H - BOTTOM_RESERVE, regionH = regionBottom - regionTop;
+    if (!fits(opts.cutMm, opts.paper)) {
+      throw new Error('This template is too large to fit on the selected paper.');
+    }
+    var cx = W / 2, cy = regionTop + regionH / 2;
+
+    // Title, optional patient name, instructions
+    text(12, 14, 'Stoma cutting template', 18, true);
+    if (opts.name && String(opts.name).trim()) text(12, 34, 'Patient: ' + cleanName(opts.name), 11, true);
+    wrapped(12, 21, 'PRINT AT 100% / ACTUAL SIZE. Do not choose "fit to page" or "scale to fit". Check the scale with the bank-card box and ruler at the bottom of this page before cutting.', 9, W - 24);
+
+    // Crosshair, measured stoma (dashed), cut line (solid)
+    line(cx - maxX - 8, cy, cx + maxX + 8, cy, 0.3, 0.6);
+    line(cx, cy - maxY - 8, cx, cy + maxY + 8, 0.3, 0.6);
+    poly(stoma, cx, cy, 0.6, 0.35, [2, 2]);
+    poly(cut, cx, cy, 1.0, 0);
+
+    // X / Y dimension lines for the cut shape, drawn at its true size so they can be checked with a ruler
+    var ex = extents(cut), ec = extents(stoma);
+    function tick(x, y) { line(x - 1.3, y + 1.3, x + 1.3, y - 1.3, 0.4, 0); }
+    var yd = cy + ex.y1 + 8;                                  // horizontal dimension line, below the shape
+    line(cx + ex.x0, cy + ex.y1 + 1.5, cx + ex.x0, yd + 2.5, 0.25, 0.4);
+    line(cx + ex.x1, cy + ex.y1 + 1.5, cx + ex.x1, yd + 2.5, 0.25, 0.4);
+    line(cx + ex.x0, yd, cx + ex.x1, yd, 0.4, 0);
+    tick(cx + ex.x0, yd); tick(cx + ex.x1, yd);
+    text(cx + (ex.x0 + ex.x1) / 2 - 11, yd + 5.5, 'X = ' + ex.x.toFixed(1) + ' mm', 8.5, true);
+    var xd = cx + ex.x1 + 12;                                 // vertical dimension line, to the right
+    line(cx + ex.x1 + 1.5, cy + ex.y0, xd + 2.5, cy + ex.y0, 0.25, 0.4);
+    line(cx + ex.x1 + 1.5, cy + ex.y1, xd + 2.5, cy + ex.y1, 0.25, 0.4);
+    line(xd, cy + ex.y0, xd, cy + ex.y1, 0.4, 0);
+    tick(xd, cy + ex.y0); tick(xd, cy + ex.y1);
+    text(xd + 3, cy + (ex.y0 + ex.y1) / 2 + 1.5, 'Y = ' + ex.y.toFixed(1) + ' mm', 8.5, true);
+
+    // "Top of photo" arrow
+    var ax = 18, ay = regionTop + 18;
+    line(ax, ay, ax, ay - 12, 0.8, 0);
+    line(ax, ay - 12, ax - 2, ay - 8.5, 0.8, 0);
+    line(ax, ay - 12, ax + 2, ay - 8.5, 0.8, 0);
+    text(ax + 5, ay - 5, 'TOP of photo', 8, false);
+
+    // Numbers
+    var s = opts.stats, c = opts.cutStats;
+    var y = regionBottom + 6;
+    y = wrapped(12, y, 'Measured stoma (dashed): ' + s.minMm.toFixed(1) + ' x ' + s.maxMm.toFixed(1) + ' mm (narrowest x widest), area ' + Math.round(s.areaMm2) + ' sq mm', 9, W - 24);
+    y = wrapped(12, y + 1, 'Cut line (solid): +' + opts.allowanceMm.toFixed(1) + ' mm all round, opening about ' + c.minMm.toFixed(1) + ' x ' + c.maxMm.toFixed(1) + ' mm', 9, W - 24, true);
+    y = wrapped(12, y + 1, 'Size of the cut line as printed: X (width) = ' + ex.x.toFixed(1) + ' mm, Y (height) = ' + ex.y.toFixed(1) + ' mm. Measure X and Y on the printout with a ruler. If they do not match, the printer has scaled the page: print again at 100%.', 9, W - 24);
+    wrapped(12, y + 1, 'Mirrored for backing paper: ' + (mir ? 'YES' : 'no') + '  |  Reference: ' + opts.refName + '  |  Created ' + opts.dateLabel, 7.5, W - 24);
+
+    // Bank-card check box and 100 mm ruler
+    var cardX = 15, cardY = H - 76, cardW = 85.6, cardH = 53.98;
+    poly([[0, 0], [cardW, 0], [cardW, cardH], [0, cardH]], cardX, cardY, 0.5, 0.35, [2, 1.5]);
+    text(cardX + 2, cardY + 5, 'Scale check: a bank card', 7, false);
+    text(cardX + 2, cardY + 9, 'should fit exactly inside', 7, false);
+    text(cardX + 2, cardY + 13, 'this dashed box.', 7, false);
+    var rulerY = H - 14, i;
+    line(cardX, rulerY, cardX + 100, rulerY, 0.5, 0);
+    for (i = 0; i <= 10; i++) line(cardX + i * 10, rulerY, cardX + i * 10, rulerY - (i % 5 === 0 ? 4 : 2.5), 0.5, 0);
+    text(cardX - 1, rulerY + 4.5, '0', 7, false);
+    text(cardX + 48, rulerY + 4.5, '50', 7, false);
+    text(cardX + 96, rulerY + 4.5, '100 mm', 7, false);
+
+    // Disclaimer to the right of the card box
+    var dx = cardX + cardW + 8;
+    wrapped(dx, cardY + 3, 'GUIDE ONLY. This is not a medical device and is not a substitute for professional advice. Check the fit against your product manufacturer\'s sizing guide and ask your stoma care nurse before cutting your first flange. Re-measure regularly: stoma size can change, especially in the first weeks and months after surgery.', 7, W - dx - 10);
+
+    // Assemble PDF objects (ASCII only so string length == byte length)
+    var stream = cmds.join('\n');
+    var objs = [];
+    objs.push('<< /Type /Catalog /Pages 2 0 R >>');
+    objs.push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + f(W * PT) + ' ' + f(H * PT) + '] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>');
+    objs.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    objs.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    objs.push('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
+    objs.push('<< /Title (Stoma cutting template) /Creator (Stoma Template) >>');
+
+    var out = '%PDF-1.4\n', offsets = [];
+    objs.forEach(function (o, idx) { offsets.push(out.length); out += (idx + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+    var xref = out.length;
+    out += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+    offsets.forEach(function (o) { out += ('0000000000' + o).slice(-10) + ' 00000 n \n'; });
+    out += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R /Info 7 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+
+    var bytes = new Uint8Array(out.length);
+    for (i = 0; i < out.length; i++) bytes[i] = out.charCodeAt(i) & 255;
+    return bytes;
+  }
+
+  return { build: build, PAPERS: PAPERS, cleanName: cleanName, extents: extents, fits: fits };
+})();
+</script>
+<script>(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var STORE_KEY = 'stoma-template-history-v1';
+
+  var state = {
+    img: null, imgW: 0, imgH: 0, isSample: false,
+    corners: [], outline: [], custom: false, customLong: 85.6, customShort: 54,
+    snap: true, snapQuad: null, snapInfo: null, autoMode: 'manual',
+    cal: null, outlineMm: null, prevMm: null, allowance: 2, mirrored: false, paper: 'a4',
+    viewingSaved: false, savedNow: false, step: 1, maxStep: 1, name: ''
+  };
+  var downloads = null;
+  var luma = null; // brightness of the photo, for edge snapping
+  var history = [];
+
+  // ---------------------------------------------------------------- helpers
+  function fmt(n, d) { return Number(n).toFixed(d === undefined ? 1 : d); }
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function dateLabel(d) { return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()); }
+  function say(el, text, cls) { el.textContent = text; el.className = 'note' + (cls ? ' ' + cls : ''); el.hidden = !text; }
+
+  // ----------------------------------------------------------- photo editor
+  function Editor(canvas, opts) {
+    this.c = canvas; this.ctx = canvas.getContext('2d'); this.o = opts;
+    this.img = null; this.iw = 0; this.ih = 0;
+    this.pts = []; this.curve = null; this.overlay = null;
+    this.s = 1; this.tx = 0; this.ty = 0; this.moved = false;
+    this.ptrs = {}; this.drag = -1; this.grab = [0, 0]; this.tap = null; this.pinch = null; this.multi = false;
+    this.cssW = 0; this.cssH = 0; this.dpr = 1;
+    var self = this;
+    canvas.addEventListener('pointerdown', function (e) { self.onDown(e); });
+    canvas.addEventListener('pointermove', function (e) { self.onMove(e); });
+    canvas.addEventListener('pointerup', function (e) { self.onUp(e); });
+    canvas.addEventListener('pointercancel', function (e) { self.onCancel(e); });
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var p = self.rel(e); self.zoomAt(p[0], p[1], e.deltaY < 0 ? 1.15 : 1 / 1.15);
+    }, { passive: false });
+  }
+  Editor.prototype.setImage = function (img, w, h) { this.img = img; this.iw = w; this.ih = h; this.moved = false; this.resize(); };
+  Editor.prototype.setOverlay = function (poly) { this.overlay = poly; this.draw(); };
+  Editor.prototype.setPoints = function (pts, curve) { this.pts = pts; this.curve = curve || null; this.draw(); };
+  Editor.prototype.resize = function () {
+    var r = this.c.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 3);
+    this.cssW = r.width; this.cssH = r.height;
+    this.c.width = Math.round(r.width * this.dpr); this.c.height = Math.round(r.height * this.dpr);
+    if (!this.moved) this.fit();
+    this.draw();
+  };
+  Editor.prototype.fit = function () {
+    if (!this.img || !this.cssW) return;
+    var s = Math.min(this.cssW / this.iw, this.cssH / this.ih);
+    this.s = s; this.tx = (this.cssW - this.iw * s) / 2; this.ty = (this.cssH - this.ih * s) / 2; this.moved = false;
+  };
+  // Zoom so the given points fill about 45% of the view, centred.
+  Editor.prototype.fitBox = function (pts) {
+    if (!pts.length || !this.cssW) return;
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    pts.forEach(function (p) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); });
+    var w = Math.max(x1 - x0, 20), h = Math.max(y1 - y0, 20);
+    var s = Math.min(this.cssW / (w * 2.2), this.cssH / (h * 2.2), 30);
+    this.s = s; this.tx = this.cssW / 2 - (x0 + w / 2) * s; this.ty = this.cssH / 2 - (y0 + h / 2) * s; this.moved = true;
+  };
+  Editor.prototype.rel = function (e) { var r = this.c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  Editor.prototype.toImg = function (sx, sy) { return [(sx - this.tx) / this.s, (sy - this.ty) / this.s]; };
+  Editor.prototype.toScr = function (p) { return [p[0] * this.s + this.tx, p[1] * this.s + this.ty]; };
+  Editor.prototype.zoomAt = function (sx, sy, k) {
+    var s2 = Math.max(0.05, Math.min(this.s * k, 30));
+    var ip = this.toImg(sx, sy);
+    this.s = s2; this.tx = sx - ip[0] * s2; this.ty = sy - ip[1] * s2; this.moved = true; this.draw();
+  };
+  Editor.prototype.zoomBy = function (k) { this.zoomAt(this.cssW / 2, this.cssH / 2, k); };
+  Editor.prototype.hit = function (pos) {
+    var best = -1, bd = 28, i;
+    for (i = 0; i < this.pts.length; i++) {
+      var d = Geo.dist(this.toScr(this.pts[i]), pos);
+      if (d <= bd) { bd = d; best = i; }
+    }
+    return best;
+  };
+  Editor.prototype.count = function () { return Object.keys(this.ptrs).length; };
+  Editor.prototype.onDown = function (e) {
+    if (!this.img) return;
+    e.preventDefault();
+    try { this.c.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+    var pos = this.rel(e); this.ptrs[e.pointerId] = pos;
+    var n = this.count();
+    if (n >= 2) {
+      this.multi = true; this.drag = -1; this.tap = null;
+      var ids = Object.keys(this.ptrs), a = this.ptrs[ids[0]], b = this.ptrs[ids[1]];
+      var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      this.pinch = { d0: Math.max(Geo.dist(a, b), 1), s0: this.s, ip: this.toImg(mid[0], mid[1]) };
+      return;
+    }
+    this.multi = false;
+    var idx = this.hit(pos);
+    if (idx >= 0) {
+      var sp = this.toScr(this.pts[idx]);
+      this.drag = idx; this.grab = [sp[0] - pos[0], sp[1] - pos[1]]; this.tap = null;
+    } else {
+      this.tap = { x: pos[0], y: pos[1], tx0: this.tx, ty0: this.ty, moved: false };
+    }
+    this.draw();
+  };
+  Editor.prototype.onMove = function (e) {
+    if (!this.ptrs[e.pointerId]) return;
+    e.preventDefault();
+    var pos = this.rel(e); this.ptrs[e.pointerId] = pos;
+    if (this.pinch && this.count() >= 2) {
+      var ids = Object.keys(this.ptrs), a = this.ptrs[ids[0]], b = this.ptrs[ids[1]];
+      var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      var s2 = Math.max(0.05, Math.min(this.pinch.s0 * Geo.dist(a, b) / this.pinch.d0, 30));
+      this.s = s2; this.tx = mid[0] - this.pinch.ip[0] * s2; this.ty = mid[1] - this.pinch.ip[1] * s2;
+      this.moved = true; this.draw(); return;
+    }
+    if (this.drag >= 0) {
+      var ip = this.toImg(pos[0] + this.grab[0], pos[1] + this.grab[1]);
+      this.pts[this.drag] = [Math.max(0, Math.min(ip[0], this.iw)), Math.max(0, Math.min(ip[1], this.ih))];
+      this.o.onChange(this.pts); this.draw(); return;
+    }
+    if (this.tap) {
+      var dx = pos[0] - this.tap.x, dy = pos[1] - this.tap.y;
+      if (!this.tap.moved && Math.hypot(dx, dy) > 7) this.tap.moved = true;
+      if (this.tap.moved) { this.tx = this.tap.tx0 + dx; this.ty = this.tap.ty0 + dy; this.moved = true; this.draw(); }
+    }
+  };
+  Editor.prototype.onUp = function (e) {
+    if (!this.ptrs[e.pointerId]) return;
+    var tap = this.tap, wasDrag = this.drag >= 0, wasMulti = this.multi;
+    delete this.ptrs[e.pointerId];
+    if (this.count() < 2) this.pinch = null;
+    if (this.count() === 0) { this.multi = false; }
+    this.drag = -1; this.tap = null;
+    if (!wasDrag && !wasMulti && tap && !tap.moved) this.addPoint(this.toImg(tap.x, tap.y));
+    this.draw();
+  };
+  Editor.prototype.onCancel = function (e) {
+    delete this.ptrs[e.pointerId]; this.pinch = null; this.drag = -1; this.tap = null;
+    if (this.count() === 0) this.multi = false;
+    this.draw();
+  };
+  Editor.prototype.addPoint = function (p) {
+    if (p[0] < 0 || p[1] < 0 || p[0] > this.iw || p[1] > this.ih) return;
+    var pts = this.pts.slice();
+    if (this.o.max && pts.length >= this.o.max) return;
+    if (this.o.insertNearest && pts.length >= 3) {
+      var bi = 0, bd = Infinity, n = pts.length, i;
+      for (i = 0; i < n; i++) {
+        var a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1];
+        var l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)) : 0;
+        var d = Geo.dist(p, [a[0] + dx * t, a[1] + dy * t]);
+        if (d < bd) { bd = d; bi = i; }
+      }
+      pts.splice(bi + 1, 0, p);
+    } else { pts.push(p); }
+    this.pts = pts; this.o.onChange(pts);
+  };
+  Editor.prototype.draw = function () {
+    var ctx = this.ctx;
+    if (!this.cssW) return;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.fillStyle = '#10201F'; ctx.fillRect(0, 0, this.cssW, this.cssH);
+    if (!this.img) return;
+    ctx.save(); ctx.translate(this.tx, this.ty); ctx.scale(this.s, this.s);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(this.img, 0, 0, this.iw, this.ih); ctx.restore();
+
+    var self = this;
+    var line = this.curve && this.curve.length >= 3 ? this.curve : this.pts;
+    if (line.length >= 2) {
+      ctx.beginPath();
+      line.forEach(function (p, i) { var q = self.toScr(p); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+      if (this.o.closeShape && line.length >= 3) ctx.closePath();
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,.65)'; ctx.lineWidth = 4.5; ctx.stroke();
+      ctx.strokeStyle = '#FFD400'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    if (this.overlay && this.overlay.length >= 3) {
+      ctx.beginPath();
+      this.overlay.forEach(function (p, i) { var q = self.toScr(p); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+      ctx.closePath(); ctx.lineJoin = 'round';
+      ctx.setLineDash([7, 5]); ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.strokeStyle = '#2EE6E6'; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+    }
+    this.pts.forEach(function (p, i) {
+      var q = self.toScr(p), act = i === self.drag;
+      ctx.beginPath(); ctx.arc(q[0], q[1], act ? 13 : 10, 0, 6.2832);
+      ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 5; ctx.stroke();
+      ctx.strokeStyle = act ? '#fff' : '#FFD400'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(q[0], q[1], 1.8, 0, 6.2832); ctx.fillStyle = '#fff'; ctx.fill();
+    });
+    if (this.drag >= 0 && this.pts[this.drag]) this.drawLoupe(this.pts[this.drag]);
+  };
+  Editor.prototype.drawLoupe = function (p) {
+    var ctx = this.ctx, R = 56, sp = this.toScr(p);
+    var cx = (sp[0] < 150 && sp[1] < 150) ? this.cssW - R - 10 : R + 10, cy = R + 10;
+    var z = Math.max(this.s * 3, 2);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.clip();
+    ctx.fillStyle = '#000'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+    ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-p[0], -p[1]);
+    ctx.drawImage(this.img, 0, 0, this.iw, this.ih); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(cx - 12, cy); ctx.lineTo(cx + 12, cy); ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy + 12);
+    ctx.strokeStyle = '#FFD400'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+  };
+
+  var edCard = new Editor($('cvCard'), { max: 4, closeShape: true, onChange: function (pts) { if (state.autoMode === 'found' || state.autoMode === 'busy') setAutoMode('adjusted'); onCorners(pts); } });
+  var edOut = new Editor($('cvOut'), { max: 24, closeShape: true, insertNearest: true, onChange: onOutline });
+
+  document.querySelectorAll('[data-zoom]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var ed = b.getAttribute('data-ed') === 'card' ? edCard : edOut, z = b.getAttribute('data-zoom');
+      if (z === 'in') ed.zoomBy(1.4); else if (z === 'out') ed.zoomBy(1 / 1.4); else { ed.fit(); ed.draw(); }
+    });
+  });
+  window.addEventListener('resize', function () { edCard.resize(); edOut.resize(); });
+
+  // ------------------------------------------------------------ photo input
+  function loadFile(file) {
+    function toCanvas(src, w, h) {
+      var k = Math.min(1, 2600 / Math.max(w, h)), c = document.createElement('canvas');
+      c.width = Math.round(w * k); c.height = Math.round(h * k);
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      return c;
+    }
+    function viaUrl(url, revoke) {
+      return new Promise(function (res, rej) {
+        var im = new Image();
+        im.onload = function () {
+          try { var c = toCanvas(im, im.naturalWidth, im.naturalHeight); if (revoke) URL.revokeObjectURL(url); res(c); } catch (e) { rej(e); }
+        };
+        im.onerror = function () { if (revoke) URL.revokeObjectURL(url); rej(new Error('image-error')); };
+        im.src = url;
+      });
+    }
+    function viaReader() {
+      return new Promise(function (res, rej) {
+        var fr = new FileReader();
+        fr.onload = function () { viaUrl(fr.result, false).then(res, rej); };
+        fr.onerror = function () { rej(new Error('read-error')); };
+        fr.readAsDataURL(file);
+      });
+    }
+    var first;
+    try { first = viaUrl(URL.createObjectURL(file), true); } catch (e) { first = Promise.reject(e); }
+    var work = first.catch(viaReader);
+    var timeout = new Promise(function (res, rej) { setTimeout(function () { rej(new Error('This is taking too long. Try "Choose from library" instead.')); }, 25000); });
+    return Promise.race([work, timeout]).catch(function (e) {
+      throw new Error(e && /too long/.test(e.message) ? e.message : 'This phone could not open that photo. Try "Choose from library" and pick the photo again.');
+    });
+  }
+  function computeLuma(canvas) {
+    try {
+      var d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data, n = canvas.width * canvas.height, l = new Uint8Array(n), i;
+      for (i = 0; i < n; i++) l[i] = (77 * d[4 * i] + 150 * d[4 * i + 1] + 29 * d[4 * i + 2]) >> 8;
+      return l;
+    } catch (e) { return null; }
+  }
+  function setPhoto(canvas, sample) {
+    luma = computeLuma(canvas);
+    state.img = canvas; state.imgW = canvas.width; state.imgH = canvas.height; state.isSample = !!sample;
+    state.corners = []; state.outline = sample ? sample.outline : [];
+    state.cal = null; state.outlineMm = null; state.prevMm = null; state.viewingSaved = false; state.savedNow = false;
+    state.custom = false; $('refStd').click();
+    document.querySelectorAll('.sample-tag').forEach(function (t) { t.hidden = !sample; });
+    edCard.setImage(canvas, canvas.width, canvas.height);
+    edOut.setImage(canvas, canvas.width, canvas.height);
+    edCard.setPoints(state.corners.slice()); edOut.setPoints(state.outline.slice());
+    onCorners(state.corners.slice(), true);
+    if (state.outline.length) onOutline(state.outline.slice(), true);
+    state.maxStep = 2 + (state.cal ? 1 : 0) + (state.cal && state.outline.length >= 5 ? 1 : 0);
+    go(2);
+    runAuto();
+  }
+  function onFile(e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    say($('s1msg'), 'Opening photo (' + Math.round((f.size || 0) / 1024) + ' KB)…', '');
+    loadFile(f).then(function (c) { say($('s1msg'), ''); setPhoto(c, null); window.scrollTo(0, 0); })
+      .catch(function (err) { say($('s1msg'), (err && err.message) || 'Could not open that photo. Try a different one.', 'bad'); });
+  }
+  $('fileCam').addEventListener('change', onFile);
+  $('fileCam').addEventListener('input', function (e) { if (e.target.files && e.target.files.length) onFile(e); });
+  $('fileLib').addEventListener('change', onFile);
+  $('btnSample').addEventListener('click', function () { var s = makeSample(); setPhoto(s.canvas, s); });
+
+  // ------------------------------------------------------------ step 2: card
+  function reference() {
+    if (!state.custom) return Geo.ID_CARD;
+    var l = parseFloat(String($('inLong').value).replace(',', '.')), s = parseFloat(String($('inShort').value).replace(',', '.'));
+    if (!(l > 0) || !(s > 0)) return null;
+    return { name: 'Custom ' + fmt(l) + ' x ' + fmt(s) + ' mm', longMm: l, shortMm: s };
+  }
+  function snapWhy(r) {
+    if (!r) return 'not clear enough';
+    if (/^edge/.test(r)) return 'one side is not clear in the photo, so tap closer to the card\u2019s edges or retake with the card sharp and well lit';
+    if (r === 'polarity') return 'the edges did not look like one card, so tap closer to the card\u2019s corners';
+    if (r === 'shape' || r === 'far') return 'it did not match the shape you tapped, so tap closer to the card\u2019s corners';
+    return 'not clear enough';
+  }
+  function recalc() {
+    var ref = reference();
+    state.snapQuad = null; state.snapInfo = null;
+    var cal = (state.corners.length === 4 && ref) ? Geo.calibrate(state.corners, ref) : null;
+    if (cal && state.snap && luma && typeof Edges !== 'undefined') {
+      var r = Edges.refineQuad(luma, state.imgW, state.imgH, cal.corners);
+      if (r.ok) {
+        var cal2 = Geo.calibrate(r.corners, ref);
+        if (cal2 && !(Math.abs(cal2.aspectError) > 0.08 && Math.abs(cal2.aspectError) > Math.abs(cal.aspectError) + 0.05)) {
+          cal = cal2; state.snapQuad = r.corners; state.snapInfo = { ok: true, shift: r.maxShift };
+        } else state.snapInfo = { ok: false };
+      } else state.snapInfo = { ok: false, reason: r.reason };
+    }
+    state.cal = cal;
+  }
+  var LEAD = {
+    busy: 'Looking for the card in your photo\u2026',
+    found: 'We found the card and outlined it in yellow. Check that the outline sits on the card.',
+    adjusted: 'Drag the corners until the yellow outline sits exactly on the card, then tap Next. A magnifier shows the spot under your finger.',
+    none: 'We could not find the card automatically. Tap its four corners, in any order. If a corner is rounded, tap where the straight edges would meet. The app then snaps to the real edges.',
+    manual: 'Tap the four corners of the card, in any order. If a corner is rounded, tap where the straight edges would meet. The app then snaps to the real edges. Drag a corner to adjust it; a magnifier shows the spot under your finger.'
+  };
+  function setAutoMode(m) {
+    state.autoMode = m;
+    $('cardLead').textContent = LEAD[m] || LEAD.manual;
+    $('autoBox').hidden = m !== 'found';
+    $('btnCardNext').hidden = m === 'found';
+    $('btnAutoAgain').hidden = m === 'busy' || m === 'found';
+  }
+  var autoToken = 0;
+  function runAuto() {
+    var ref = reference(), tok = ++autoToken;
+    if (!luma || !ref || typeof AutoCard === 'undefined') { setAutoMode('manual'); return; }
+    setAutoMode('busy');
+    setTimeout(function () {
+      if (tok !== autoToken) return;
+      var res;
+      try { res = AutoCard.detect(luma, state.imgW, state.imgH, Geo, ref); } catch (e) { res = { ok: false }; }
+      if (!res.ok) { setAutoMode('none'); return; }
+      var corners = res.corners, cal0 = Geo.calibrate(corners, ref);
+      if (cal0 && typeof Edges !== 'undefined') { var r = Edges.refineQuad(luma, state.imgW, state.imgH, cal0.corners); if (r.ok) corners = r.corners; }
+      onCorners(corners.map(function (p) { return [p[0], p[1]]; }));
+      setAutoMode('found');
+    }, 40);
+  }
+  $('btnAutoYes').addEventListener('click', function () { if (state.cal) go(3); });
+  $('btnAutoNo').addEventListener('click', function () { autoToken++; onCorners([]); setAutoMode('manual'); });
+  $('btnAutoAgain').addEventListener('click', function () { autoToken++; onCorners([]); runAuto(); });
+  function onCorners(pts, silent) {
+    state.corners = pts; recalc();
+    $('cardCount').textContent = pts.length + '/4';
+    var cal = state.cal, msg = $('cardMsg'), warn = $('cardWarn'), ref = reference();
+    warn.innerHTML = ''; warn.hidden = true;
+    if (!ref) say(msg, 'Enter the reference size in millimetres.', 'warn');
+    else if (pts.length === 4 && !cal) say(msg, 'Those corners do not form a card shape. Reset and try again.', 'bad');
+    else if (cal) {
+      var snapTxt = '';
+      if (state.snap && state.snapInfo) snapTxt = state.snapInfo.ok
+        ? ' Snapped to the card\u2019s edges (moved up to ' + fmt(state.snapInfo.shift, 1) + ' px).'
+        : ' Could not find the card\u2019s edges (' + snapWhy(state.snapInfo.reason) + '), so your taps are used as they are.';
+      say(msg, 'Scale set: 1 pixel is about ' + fmt(cal.mmPerPx, 2) + ' mm at the card.' + snapTxt, state.snap && state.snapInfo && !state.snapInfo.ok ? 'warn' : 'ok');
+      var w = [];
+      if (cal.mmPerPx > 0.25) w.push('The card is small in the photo. Move closer and retake for better accuracy.');
+      if (Math.abs(cal.aspectError) > 0.10 || cal.skew > 0.12) w.push('The phone looks tilted relative to the skin. Retake holding it parallel for best accuracy.');
+      if (w.length) { warn.hidden = false; w.forEach(function (t) { var p = document.createElement('p'); p.textContent = t; warn.appendChild(p); }); }
+    } else say(msg, '', '');
+    $('btnCardNext').disabled = !cal;
+    $('btnCardReset').disabled = !pts.length;
+    edCard.overlay = state.snapQuad;
+    edCard.setPoints(pts);
+    if (!silent) {
+      state.maxStep = cal ? Math.max(state.maxStep, 3) : 2;
+      if (!cal) state.outlineMm = null;
+      renderSteps();
+      if (state.outline.length >= 3) onOutline(state.outline, true);
+    }
+  }
+  $('inSnap').addEventListener('change', function () { state.snap = $('inSnap').checked; recalc(); onCorners(state.corners, true); if (state.cal) state.maxStep = Math.max(state.maxStep, 3); renderSteps(); if (state.outline.length >= 3) onOutline(state.outline, true); });
+  $('btnCardReset').addEventListener('click', function () { autoToken++; onCorners([]); if (state.autoMode === 'found' || state.autoMode === 'busy' || state.autoMode === 'adjusted') setAutoMode('manual'); });
+  $('btnCardNext').addEventListener('click', function () { if (state.cal) go(3); });
+  $('refStd').addEventListener('click', function () { state.custom = false; $('customBox').hidden = true; $('refStd').setAttribute('aria-pressed', 'true'); $('refCus').setAttribute('aria-pressed', 'false'); recalc(); onCorners(state.corners, true); renderSteps(); });
+  $('refCus').addEventListener('click', function () { state.custom = true; $('customBox').hidden = false; $('refStd').setAttribute('aria-pressed', 'false'); $('refCus').setAttribute('aria-pressed', 'true'); recalc(); onCorners(state.corners, true); renderSteps(); });
+  ['inLong', 'inShort'].forEach(function (id) { $(id).addEventListener('input', function () { recalc(); onCorners(state.corners, true); if (state.cal) state.maxStep = Math.max(state.maxStep, 3); renderSteps(); if (state.outline.length >= 3) onOutline(state.outline, true); }); });
+
+  // --------------------------------------------------------- step 3: outline
+  var curveMm = null;
+  function onOutline(pts, silent) {
+    state.outline = pts;
+    var curveImg = pts.length >= 3 ? Geo.catmullRomClosed(pts, 16) : null;
+    var stats = null;
+    if (curveImg && state.cal) { curveMm = Geo.toMmUpright(state.cal, curveImg); stats = Geo.measure(curveMm); } else curveMm = null;
+    edOut.setPoints(pts, curveImg);
+    var out = $('outStats'), hint = $('outMsg');
+    if (!stats || pts.length < 5) {
+      out.innerHTML = '<span class="muted">Add at least 5 points around the stoma.</span>';
+      say(hint, '', '');
+    } else {
+      out.innerHTML = '<span class="k">Narrowest</span><b class="num">' + fmt(stats.minMm) + ' mm</b><span class="k">Widest</span><b class="num">' + fmt(stats.maxMm) + ' mm</b><span class="k">Area</span><b class="num">' + Math.round(stats.areaMm2) + ' mm²</b>';
+      if (stats.maxMm > 80 || stats.minMm < 5) say(hint, 'This outline looks unusually ' + (stats.maxMm > 80 ? 'large' : 'small') + '. Check the card corners in step 2.', 'warn');
+      else say(hint, '', '');
+    }
+    $('btnOutNext').disabled = !(stats && pts.length >= 5);
+    $('btnOutUndo').disabled = !pts.length; $('btnOutClear').disabled = !pts.length;
+    if (!silent) { state.maxStep = (stats && pts.length >= 5) ? 4 : 3; renderSteps(); }
+  }
+  $('btnOutUndo').addEventListener('click', function () { onOutline(state.outline.slice(0, -1)); });
+  $('btnOutClear').addEventListener('click', function () { onOutline([]); });
+  $('btnOval').addEventListener('click', function () {
+    if (!state.cal) return;
+    var cx = state.imgW / 2, cy = state.imgH / 2, c = Geo.hApply(state.cal.toMm, [cx, cy]), pts = [], i;
+    for (i = 0; i < 12; i++) {
+      var t = 2 * Math.PI * i / 12, p = Geo.hApply(state.cal.toImg, [c[0] + 12.5 * Math.cos(t), c[1] + 10 * Math.sin(t)]);
+      pts.push([Math.max(0, Math.min(p[0], state.imgW)), Math.max(0, Math.min(p[1], state.imgH))]);
+    }
+    onOutline(pts);
+  });
+  $('btnOutNext').addEventListener('click', function () {
+    if (!curveMm) return;
+    state.outlineMm = Geo.centreOnCentroid(Geo.resampleClosed(curveMm, 96));
+    state.prevMm = history.length ? history[0].outlineMm : null;
+    state.viewingSaved = false; state.savedNow = false;
+    go(4);
+  });
+
+  // ------------------------------------------------------- step 4: template
+  function renderTemplate() {
+    var o = state.outlineMm;
+    if (!o) return;
+    var cut = Geo.offsetClosed(o, state.allowance), s = Geo.measure(o), c = Geo.measure(cut);
+    var hx = 20, hy = 20, i;
+    cut.concat(state.prevMm || []).forEach(function (p) { hx = Math.max(hx, Math.abs(p[0])); hy = Math.max(hy, Math.abs(p[1])); });
+    hx += 6; hy += 6;
+    var grid = '', g;
+    for (g = -Math.floor(hx / 10) * 10; g <= hx; g += 10) grid += 'M' + g + ' ' + (-hy) + 'V' + hy;
+    for (g = -Math.floor(hy / 10) * 10; g <= hy; g += 10) grid += 'M' + (-hx) + ' ' + g + 'H' + hx;
+    function path(pts) { return 'M' + pts.map(function (p) { return fmt(p[0], 2) + ' ' + fmt(p[1], 2); }).join('L') + 'Z'; }
+    var mir = state.mirrored ? ' transform="scale(-1 1)"' : '';
+    $('tplSvg').setAttribute('viewBox', (-hx) + ' ' + (-hy) + ' ' + (2 * hx) + ' ' + (2 * hy));
+    $('tplSvg').innerHTML = '<path class="g" d="' + grid + '" vector-effect="non-scaling-stroke"/><g' + mir + '>' +
+      (state.prevMm ? '<path class="prev" d="' + path(state.prevMm) + '" vector-effect="non-scaling-stroke"/>' : '') +
+      '<path class="meas" d="' + path(o) + '" vector-effect="non-scaling-stroke"/><path class="cut" d="' + path(cut) + '" vector-effect="non-scaling-stroke"/></g>';
+    $('tplMeasured').textContent = fmt(s.minMm) + ' × ' + fmt(s.maxMm) + ' mm';
+    $('tplCut').textContent = fmt(c.minMm) + ' × ' + fmt(c.maxMm) + ' mm';
+    $('tplArea').textContent = Math.round(s.areaMm2) + ' mm²';
+    $('allowVal').textContent = fmt(state.allowance) + ' mm';
+    $('legendPrev').hidden = !state.prevMm;
+    $('btnSave').disabled = state.viewingSaved || state.savedNow;
+    $('btnSave').textContent = (state.viewingSaved || state.savedNow) ? 'Saved to history' : 'Save to history';
+    if (state.prevMm) {
+      var p = Geo.measure(state.prevMm);
+      $('cmpNote').hidden = false;
+      $('cmpNote').textContent = 'Compared with your previous measurement: narrowest ' + sgn(s.minMm - p.minMm) + ' mm, widest ' + sgn(s.maxMm - p.maxMm) + ' mm, area ' + sgn((s.areaMm2 - p.areaMm2) / p.areaMm2 * 100) + '%. Differences of 1 to 2 mm can be measurement error.';
+    } else $('cmpNote').hidden = true;
+    var paper = TemplatePdf.PAPERS[state.paper] || TemplatePdf.PAPERS.a4;
+    var tooBig = !TemplatePdf.fits(cut, state.paper);
+    var ex = TemplatePdf.extents(cut);
+    $('tplXY').textContent = 'X ' + fmt(ex.x) + ' × Y ' + fmt(ex.y) + ' mm';
+    $('btnPdf').disabled = tooBig; $('btnShare').disabled = tooBig;
+    say($('pdfMsg'), tooBig ? 'This template is too large to fit on one page.' : '', 'bad');
+  }
+  function sgn(v) { return (v >= 0 ? '+' : '') + fmt(v); }
+  $('inAllow').addEventListener('input', function () { state.allowance = parseFloat($('inAllow').value); state.savedNow = false; renderTemplate(); });
+  $('inName').addEventListener('input', function () { state.name = $('inName').value; if (!state.viewingSaved) state.savedNow = false; $('btnSave').disabled = state.viewingSaved || state.savedNow; $('btnSave').textContent = (state.viewingSaved || state.savedNow) ? 'Saved to history' : 'Save to history'; });
+  $('inMirror').addEventListener('change', function () { state.mirrored = $('inMirror').checked; state.savedNow = false; renderTemplate(); });
+  document.querySelectorAll('[name=paper]').forEach(function (r) { r.addEventListener('change', function () { if (r.checked) { state.paper = r.value; renderTemplate(); } }); });
+
+  function currentPdf() {
+    var o = state.outlineMm, cut = Geo.offsetClosed(o, state.allowance);
+    return TemplatePdf.build({
+      stomaMm: o, cutMm: cut, mirrored: state.mirrored, paper: state.paper, allowanceMm: state.allowance,
+      name: state.name, stats: Geo.measure(o), cutStats: Geo.measure(cut), refName: state.viewingSaved && state.savedRef ? state.savedRef : (reference() || Geo.ID_CARD).name,
+      dateLabel: dateLabel(new Date())
+    });
+  }
+  // Save a file: through the host's downloads capability when it exists, otherwise a normal browser download.
+  function saveFile(name, bytes) {
+    if (downloads) return downloads.save({ filename: name, data: bytes });
+    return new Promise(function (res, rej) {
+      try {
+        var url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })), link = document.createElement('a');
+        link.href = url; link.download = name; link.rel = 'noopener';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        res('download');
+      } catch (e) { rej({ code: 'unavailable' }); }
+    });
+  }
+  $('btnPdf').addEventListener('click', function () {
+    var bytes;
+    try { bytes = currentPdf(); } catch (e) { say($('pdfMsg'), e.message, 'bad'); return; }
+    say($('pdfMsg'), '', '');
+    saveFile(pdfFileName(), bytes).then(function () {
+      say($('pdfMsg'), 'PDF ready. Open it from Files or Downloads, then print it at 100% (actual size). Check the card box, ruler and X and Y dimensions on the printout before cutting. If nothing downloaded, use "Share PDF" below.', 'ok');
+    }, function (err) {
+      var code = err && err.code;
+      if (code === 'declined') say($('pdfMsg'), 'Not saved.', 'warn');
+      else say($('pdfMsg'), 'Could not save the PDF here (' + (code || 'unknown') + '). Try "Share PDF" below, or open the page in your normal browser.', 'bad');
+    });
+  });
+  $('btnSave').addEventListener('click', function () {
+    if (!state.outlineMm || state.viewingSaved || state.savedNow) return;
+    history.unshift({ id: String(Date.now()), t: new Date().toISOString(), outlineMm: state.outlineMm.map(function (p) { return [Math.round(p[0] * 100) / 100, Math.round(p[1] * 100) / 100]; }), allowance: state.allowance, mirrored: state.mirrored, name: state.name.trim(), ref: (reference() || Geo.ID_CARD).name });
+    persist(); state.savedNow = true; renderTemplate(); renderHistory();
+  });
+  $('btnAgain').addEventListener('click', function () { state.img = null; go(1); });
+
+  // ------------------------------------------------- suppliers and sending
+  var SUP_KEY = 'stoma-suppliers-v1', suppliers = [], supSel = '', supEditing = null;
+  function loadSuppliers() {
+    try {
+      var r = JSON.parse(localStorage.getItem(SUP_KEY) || '{}');
+      if (r && Array.isArray(r.list)) suppliers = r.list.filter(function (s) { return s && typeof s.id === 'string' && typeof s.name === 'string'; });
+      supSel = (r && typeof r.sel === 'string') ? r.sel : '';
+    } catch (e) { suppliers = []; supSel = ''; }
+  }
+  function persistSuppliers() { try { localStorage.setItem(SUP_KEY, JSON.stringify({ list: suppliers, sel: supSel })); } catch (e) { /* storage unavailable */ } }
+  function currentSupplier() { for (var i = 0; i < suppliers.length; i++) if (suppliers[i].id === supSel) return suppliers[i]; return null; }
+  function renderSuppliers() {
+    var sel = $('selSupplier'), cur = currentSupplier();
+    sel.innerHTML = '';
+    var o0 = document.createElement('option'); o0.value = ''; o0.textContent = suppliers.length ? 'Choose a supplier' : 'No suppliers saved yet'; sel.appendChild(o0);
+    suppliers.forEach(function (s) { var o = document.createElement('option'); o.value = s.id; o.textContent = s.name; sel.appendChild(o); });
+    sel.value = cur ? cur.id : '';
+    $('btnSupEdit').hidden = !cur;
+    var info = $('supInfo');
+    if (cur) { info.hidden = false; info.textContent = [cur.email, cur.phone, cur.account ? 'Ref ' + cur.account : ''].filter(Boolean).join('  ·  '); } else info.hidden = true;
+  }
+  function showSupForm(s) {
+    supEditing = s ? s.id : '';
+    $('supName').value = s ? s.name : ''; $('supEmail').value = s ? (s.email || '') : ''; $('supPhone').value = s ? (s.phone || '') : '';
+    $('supAcct').value = s ? (s.account || '') : ''; $('supNotes').value = s ? (s.notes || '') : '';
+    $('supDelete').hidden = !s; $('supErr').hidden = true; $('supBox').hidden = false;
+    $('supName').focus();
+  }
+  function hideSupForm() { $('supBox').hidden = true; supEditing = null; }
+  $('selSupplier').addEventListener('change', function () { supSel = $('selSupplier').value; persistSuppliers(); renderSuppliers(); });
+  $('btnSupAdd').addEventListener('click', function () { showSupForm(null); });
+  $('btnSupEdit').addEventListener('click', function () { var s = currentSupplier(); if (s) showSupForm(s); });
+  $('supCancel').addEventListener('click', hideSupForm);
+  $('supSave').addEventListener('click', function () {
+    var name = $('supName').value.trim(), email = $('supEmail').value.trim(), err = $('supErr');
+    if (!name) { say(err, 'Enter the supplier name.', 'warn'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say(err, 'Enter a valid email address, for example orders@supplier.co.uk.', 'warn'); return; }
+    var rec = { id: supEditing || ('s' + Date.now()), name: name, email: email, phone: $('supPhone').value.trim(), account: $('supAcct').value.trim(), notes: $('supNotes').value.trim() };
+    var idx = -1; suppliers.forEach(function (s, i) { if (s.id === rec.id) idx = i; });
+    if (idx >= 0) suppliers[idx] = rec; else suppliers.push(rec);
+    suppliers.sort(function (x, y) { return x.name.localeCompare(y.name); });
+    supSel = rec.id; persistSuppliers(); renderSuppliers(); hideSupForm();
+  });
+  $('supDelete').addEventListener('click', function () {
+    if (!supEditing) return;
+    suppliers = suppliers.filter(function (s) { return s.id !== supEditing; });
+    if (supSel === supEditing) supSel = '';
+    persistSuppliers(); renderSuppliers(); hideSupForm();
+  });
+
+  function pdfFileName() {
+    var n = TemplatePdf.cleanName(state.name).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return 'stoma-template-' + dateLabel(new Date()) + (n ? '-' + n : '') + '.pdf';
+  }
+  function emailParts() {
+    var o = state.outlineMm, cut = Geo.offsetClosed(o, state.allowance), s = Geo.measure(o), c = Geo.measure(cut), ex = TemplatePdf.extents(cut);
+    var sup = currentSupplier(), name = state.name.trim(), L = [];
+    L.push('Hello' + (sup ? ' ' + sup.name : '') + ',', '', 'Please find my stoma cutting template attached (PDF, to be printed at 100% actual size).', '');
+    if (name) L.push('Patient: ' + name);
+    L.push('Date: ' + dateLabel(new Date()));
+    if (sup && sup.account) L.push('Account or reference: ' + sup.account);
+    L.push('Measured stoma: ' + fmt(s.minMm) + ' x ' + fmt(s.maxMm) + ' mm (narrowest x widest), area ' + Math.round(s.areaMm2) + ' sq mm');
+    L.push('Cut opening with ' + fmt(state.allowance) + ' mm allowance: ' + fmt(c.minMm) + ' x ' + fmt(c.maxMm) + ' mm');
+    L.push('Cut line size on the page: X (width) ' + fmt(ex.x) + ' mm, Y (height) ' + fmt(ex.y) + ' mm');
+    L.push('Mirrored for backing paper: ' + (state.mirrored ? 'yes' : 'no'));
+    if (sup && sup.notes) L.push('Notes: ' + sup.notes);
+    L.push('', 'This template is a guide only. Please check it against your sizing guide and tell me if anything needs to change.', '', 'Kind regards' + (name ? ',' : ''));
+    if (name) L.push(name);
+    return { to: sup ? sup.email : '', subject: 'Stoma cutting template' + (name ? ' - ' + name : ''), body: L.join('\n') };
+  }
+  function copyText(str) {
+    function fallback() {
+      return new Promise(function (res, rej) {
+        var ta = document.createElement('textarea'); ta.value = str; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, str.length);
+        var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(ta); ok ? res() : rej(new Error('copy failed'));
+      });
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(str).catch(fallback);
+    return fallback();
+  }
+  $('btnCopyMsg').addEventListener('click', function () {
+    if (!state.outlineMm) return;
+    var m = emailParts();
+    copyText((m.to ? 'To: ' + m.to + '\n' : '') + 'Subject: ' + m.subject + '\n\n' + m.body).then(
+      function () { say($('sendMsg'), 'Copied. Paste it into an email or message, and attach the PDF.', 'ok'); },
+      function () { say($('sendMsg'), 'Could not copy here. Use "Write the email" instead.', 'bad'); });
+  });
+  $('btnMail').addEventListener('click', function () {
+    if (!state.outlineMm) return;
+    var m = emailParts(), sup = currentSupplier();
+    var url = 'mailto:' + (m.to ? encodeURIComponent(m.to).replace(/%40/g, '@') : '') + '?subject=' + encodeURIComponent(m.subject) + '&body=' + encodeURIComponent(m.body.replace(/\n/g, '\r\n'));
+    var link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener';
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    say($('sendMsg'), (sup ? '' : 'No supplier chosen, so the To field is empty. ') + 'Your email app should open with the details filled in. Attach the PDF: save it with "Save PDF template" above, or use "Share PDF" instead. If nothing opened, tap "Copy the message".', 'ok');
+  });
+  $('btnShare').addEventListener('click', function () {
+    if (!state.outlineMm) return;
+    var bytes, m = emailParts();
+    try { bytes = currentPdf(); } catch (e) { say($('sendMsg'), e.message, 'bad'); return; }
+    var file = new File([bytes], pdfFileName(), { type: 'application/pdf' });
+    var data = { files: [file], title: m.subject, text: m.body };
+    if (navigator.canShare && !navigator.canShare(data)) { say($('sendMsg'), 'This browser cannot share a PDF. Use "Write the email" and attach the saved PDF.', 'warn'); return; }
+    navigator.share(data).then(function () {
+      var sup = currentSupplier();
+      say($('sendMsg'), 'Shared.' + (sup ? ' Send it to ' + sup.email + '.' : ''), 'ok');
+    }, function (err) {
+      if (err && err.name === 'AbortError') say($('sendMsg'), 'Not shared.', 'warn');
+      else say($('sendMsg'), 'Sharing is not allowed in this view. Use "Write the email" and attach the saved PDF.', 'warn');
+    });
+  });
+  try {
+    if (typeof File === 'function' && navigator.share && navigator.canShare && navigator.canShare({ files: [new File(['x'], 't.pdf', { type: 'application/pdf' })] })) $('btnShare').hidden = false;
+  } catch (e) { /* share not available */ }
+
+  // ---------------------------------------------------------------- history
+  function loadHistory() { try { var r = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); if (Array.isArray(r)) history = r.filter(function (h) { return h && h.outlineMm && h.outlineMm.length > 2; }); } catch (e) { history = []; } }
+  function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify(history)); } catch (e) { /* storage unavailable */ } }
+  function renderHistory() {
+    var box = $('histList'); box.innerHTML = '';
+    $('histWrap').hidden = !history.length;
+    history.forEach(function (h, i) {
+      var s = Geo.measure(h.outlineMm), older = history[i + 1], li = document.createElement('li');
+      var d = new Date(h.t), delta = '';
+      if (older) { var o = Geo.measure(older.outlineMm); delta = ' · area ' + sgn((s.areaMm2 - o.areaMm2) / o.areaMm2 * 100) + '% vs previous'; }
+      var open = document.createElement('button'); open.type = 'button'; open.className = 'hist-open';
+      open.innerHTML = '<span class="num big"></span><span class="muted small"></span>';
+      open.children[0].textContent = fmt(s.minMm) + ' × ' + fmt(s.maxMm) + ' mm';
+      open.children[1].textContent = (h.name ? h.name + ' · ' : '') + dateLabel(d) + delta;
+      open.addEventListener('click', function () {
+        state.name = h.name || ''; $('inName').value = state.name;
+        state.outlineMm = h.outlineMm; state.allowance = h.allowance; state.mirrored = h.mirrored; state.savedRef = h.ref;
+        state.prevMm = older ? older.outlineMm : null; state.viewingSaved = true; state.savedNow = false; state.img = null;
+        $('inAllow').value = h.allowance; $('inMirror').checked = h.mirrored; state.maxStep = 4;
+        go(4);
+      });
+      var del = document.createElement('button'); del.type = 'button'; del.className = 'btn ghost sm'; del.textContent = 'Delete'; del.setAttribute('aria-label', 'Delete measurement from ' + dateLabel(d));
+      var armed = false;
+      del.addEventListener('click', function () {
+        if (!armed) { armed = true; del.textContent = 'Tap again to delete'; setTimeout(function () { armed = false; del.textContent = 'Delete'; }, 3000); return; }
+        history = history.filter(function (x) { return x.id !== h.id; }); persist(); renderHistory();
+      });
+      li.appendChild(open); li.appendChild(del); box.appendChild(li);
+    });
+  }
+
+  // ------------------------------------------------------------------ steps
+  var STEPS = ['Photo', 'Card', 'Outline', 'Template'];
+  function renderSteps() {
+    var nav = $('steps');
+    Array.prototype.forEach.call(nav.children, function (b, i) {
+      var n = i + 1, ok = n <= state.maxStep && (n === 1 || state.img || state.viewingSaved && n === 4);
+      if (n > 1 && n < 4 && !state.img) ok = false;
+      b.disabled = !ok; b.setAttribute('aria-selected', n === state.step ? 'true' : 'false');
+      b.classList.toggle('done', n < state.step || (n < state.maxStep && n !== state.step));
+    });
+  }
+  function go(n) {
+    state.step = n;
+    for (var i = 1; i <= 4; i++) $('s' + i).hidden = i !== n;
+    if (n === 2) edCard.resize();
+    if (n === 3) {
+      edOut.resize(); onOutline(state.outline, true);
+      if (state.outline.length >= 3) { edOut.fitBox(state.outline); edOut.draw(); }
+    }
+    if (n === 4) renderTemplate();
+    if (n === 1) { state.viewingSaved = false; }
+    renderSteps();
+    window.scrollTo(0, 0);
+  }
+  Array.prototype.forEach.call($('steps').children, function (b, i) { b.addEventListener('click', function () { if (!b.disabled) go(i + 1); }); });
+
+  // ---------------------------------------------------------- example photo
+  function makeSample() {
+    var W = 1600, H = 1200, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d');
+    var quad = [[110, 90], [1500, 140], [1440, 1090], [70, 990]];
+    var hm = Geo.homography([[0, 0], [200, 0], [200, 150], [0, 150]], quad);
+    function P(p) { return Geo.hApply(hm, p); }
+    function fillPoly(pts, style) { x.beginPath(); pts.forEach(function (p, i) { var q = P(p); if (i) x.lineTo(q[0], q[1]); else x.moveTo(q[0], q[1]); }); x.closePath(); x.fillStyle = style; x.fill(); }
+    function ell(cx, cy, a, b, rot, n) { var o = [], i; for (i = 0; i < n; i++) { var t = 2 * Math.PI * i / n, u = a * Math.cos(t), v = b * Math.sin(t); o.push([cx + u * Math.cos(rot) - v * Math.sin(rot), cy + u * Math.sin(rot) + v * Math.cos(rot)]); } return o; }
+    var g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#E6BDA2'); g.addColorStop(1, '#D1A084');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    var cx0 = 18, cy0 = 24, cw = 85.6, ch = 53.98;
+    function rrect(x0, y0, w, h, r) {
+      var o = [], k, cs = [[x0 + w - r, y0 + r, -90], [x0 + w - r, y0 + h - r, 0], [x0 + r, y0 + h - r, 90], [x0 + r, y0 + r, 180]];
+      cs.forEach(function (c) { for (k = 0; k <= 8; k++) { var t = (c[2] + 90 * k / 8) * Math.PI / 180; o.push([c[0] + r * Math.cos(t), c[1] + r * Math.sin(t)]); } });
+      return o;
+    }
+    fillPoly(rrect(cx0 - 1, cy0 + 1, cw + 2.5, ch + 1, 3.4), 'rgba(90,50,30,.25)');
+    fillPoly(rrect(cx0, cy0, cw, ch, 3.18), '#F3F5F7');
+    fillPoly([[cx0, cy0 + 9], [cx0 + cw, cy0 + 9], [cx0 + cw, cy0 + 19], [cx0, cy0 + 19]], '#2D3E50');
+    fillPoly([[cx0 + 6, cy0 + 32], [cx0 + 50, cy0 + 32], [cx0 + 50, cy0 + 35], [cx0 + 6, cy0 + 35]], '#9AA7B3');
+    fillPoly([[cx0 + 6, cy0 + 40], [cx0 + 36, cy0 + 40], [cx0 + 36, cy0 + 43], [cx0 + 6, cy0 + 43]], '#9AA7B3');
+    fillPoly([[cx0 + 62, cy0 + 34], [cx0 + 78, cy0 + 34], [cx0 + 78, cy0 + 46], [cx0 + 62, cy0 + 46]], '#C9A24A');
+    var sc = [150, 84], rot = 20 * Math.PI / 180;
+    fillPoly(ell(sc[0], sc[1], 21, 18, rot, 72), 'rgba(160,90,80,.35)');
+    fillPoly(ell(sc[0], sc[1], 14, 11, rot, 72), '#B53A52');
+    fillPoly(ell(sc[0], sc[1], 8.5, 6.5, rot, 72), '#D8657D');
+    fillPoly(ell(sc[0] - 2, sc[1] - 2, 3, 2, rot, 36), 'rgba(255,255,255,.35)');
+    var jit = [[5, -4], [-6, 5], [4, 6], [-5, -5]]; // deliberately imperfect taps, so the example shows the snapping
+    var corners = [[cx0, cy0], [cx0 + cw, cy0], [cx0 + cw, cy0 + ch], [cx0, cy0 + ch]].map(function (p, i) { var q = P(p); return [q[0] + jit[i][0], q[1] + jit[i][1]]; });
+    var outline = ell(sc[0], sc[1], 14, 11, rot, 12).map(function (p, i) { var q = P(p); return [q[0] + (i % 3 - 1) * 0.8, q[1] + (i % 2 ? 0.8 : -0.8)]; });
+    return { canvas: c, corners: corners, outline: outline };
+  }
+
+  // ------------------------------------------------------------------- boot
+  loadHistory(); renderHistory(); loadSuppliers(); renderSuppliers(); renderSteps();
+  $('inAllow').value = state.allowance;
+  try {
+    if (window.claude && window.claude.use) {
+      window.claude.use('downloads').then(function (d) { downloads = d; if (!d) $('btnPdf').title = 'Saving files is not available in this view'; }, function () { downloads = null; });
+    }
+  } catch (e) { downloads = null; }
+  window.__stoma = { state: state, Geo: Geo, onCorners: onCorners, AutoCard: typeof AutoCard !== 'undefined' ? AutoCard : null, Edges: typeof Edges !== 'undefined' ? Edges : null, get downloads() { return downloads; } };
+})();
+</script>
+<script>if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }</script></body></html>
